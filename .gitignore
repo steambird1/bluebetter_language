@@ -1,6 +1,7 @@
 *.test.*
 *.txt
 old/*
+doc/*
 *.exe
 *.gch
 *.o
