@@ -3,6 +3,12 @@
 #include <iostream>
 using namespace std;
 
+#define MAX_BUF_SIZE 1024
+
+void verput(void) {
+	cout << "Bluebetter by seabird" << endl << "Version " << _BLUEBETTER_VER / 100 << "-" << _BLUEBETTER_VER % 100 << endl;
+}
+
 void intp(void) {
 	string s;
 	splits asplit;
@@ -73,6 +79,8 @@ void intp(void) {
 			if (ptr1>ptr2) mem[dst]=1;
 			else mem[dst]=0;
 		} else if (asplit[0]=="btel") {
+			check_parameter(2);
+			if (asplit[1]=="exit") return;
 			check_parameter(3);
 			int ptr = getRealVal(&mem,asplit[2]);
 			if (asplit[1]=="get") {
@@ -94,10 +102,27 @@ void intp(void) {
 
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
+		verput();
 		intp();
 	} else {
 		string c = argv[1];
-		if (argv[1]=="shell") intp();
+		if (c=="shell") {
+			verput();
+			intp();
+		}
+		else if (c=="version") {
+			verput();
+		} else {
+			// run
+			FILE *f; char buf[MAX_BUF_SIZE];
+			string s = "";
+			f = fopen(argv[1],"r");
+			while (!feof(f)) {
+				fgets(buf,MAX_BUF_SIZE - 1,f);
+				s = s + buf + "\n";
+			}
+			runCode(s);
+		}
 	}
 	return 0;
 } 
