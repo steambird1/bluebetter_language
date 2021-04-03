@@ -39,7 +39,7 @@ const int bad_tell = 4;
 const int math_error = 5; 
 
 // Macros
-#define throws(err) mem[-1]=err
+#define throws(err) mem[-1]=err; continue; 
 #define check_parameter(count) if (asplit.size() < count) {throws(required_parameter);}
 
 int getRealVal(bmemap* memap, string ptr) {
@@ -66,8 +66,10 @@ int runCode(string bcmd) {
 	splits asplit;//arguments
 	bmemap mem;
 	jmpmap jmps;
+	ifdebug printf("Resolving...\n"); 
 	for (int i = 0; i < lsplit.size(); i++) {
 		asplit = split_arg(lsplit[i],false);
+		if (asplit.size() < 1) continue;//ignore
 		if (asplit[0]=="bflg") {
 			if (asplit.size() < 2) return -1; // invaild symbol
 			jmps[asplit[1]]=i; // should move to first
@@ -81,7 +83,9 @@ int runCode(string bcmd) {
 		} else if (asplit[0]=="bjmp") {
 			check_parameter(3);
 			int ptrz = getRealVal(&mem,asplit[1]);
-			if (!jmps.count(asplit[2])) throws(bad_jump);
+			if (!jmps.count(asplit[2])) {
+				throws(bad_jump);
+			}
 			if (ptrz!=0) {
 				i = jmps[asplit[2]];
 			}
@@ -115,9 +119,15 @@ int runCode(string bcmd) {
 		} else if (asplit[0]=="btim") {
 			_op(); mem[ptr]*=val;
 		} else if (asplit[0]=="bdiv") {
-			_op(); if (val==0) throws(math_error); mem[ptr]/=val;
+			_op(); if (val==0) {
+				throws(math_error);
+			}
+			mem[ptr]/=val;
 		} else if (asplit[0]=="bmod") {
-			_op(); if (val==0) throws(math_error); mem[ptr]%=val;
+			_op(); if (val==0) {
+				throws(math_error);
+			}
+			mem[ptr]%=val;
 		} else if (asplit[0]=="bequ") {
 			_cop();
 			if (ptr1==ptr2) mem[dst]=1;
@@ -143,21 +153,6 @@ int runCode(string bcmd) {
 				throws(bad_tell);
 			}
 		}
-		/*
-		tand [ptr] [ptr] ptr&=val
-band [ptr] [ptr] ptr=ptr&&val
-tor [ptr] [ptr] ptr|=val
-bor [ptr] [ptr] ptr=ptr||val
-txor [ptr] [ptr] ptr^=val
-bnot [ptr] ptr=!ptr
-tlm [ptr] [ptr] ptr=ptr<<val
-trm [ptr] [ptr] ptr=ptr>>val
-badd [ptr] [ptr] ptr+=val
-bded [ptr] [ptr] ptr-=-val
-btim [ptr] [ptr] ptr*=val
-bdiv [ptr] [ptr] ptr/=val
-bmod [ptr] [ptr] ptr%=val
-		*/
 	}
 	if (!mem.count(0)) return 0;
 	else return mem[0]; 
