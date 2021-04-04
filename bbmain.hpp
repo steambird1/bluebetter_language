@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <cstdio>
+#include <conio.h> 
 using namespace std;
 
 #ifndef _BLUEBETTER_
@@ -137,7 +138,15 @@ int runCode(string bcmd) {
 			if (ptr1>ptr2) mem[dst]=1;
 			else mem[dst]=0;
 		} else if (asplit[0]=="btel") {
+			check_parameter(2);
+			if (asplit[1]=="exit") {
+				goto ret;
+			}
 			check_parameter(3);
+			if (asplit[1]=="say") {
+				printf("%s\n",asplit[2].c_str());
+				continue;
+			}
 			int ptr = getRealVal(&mem,asplit[2]);
 			if (asplit[1]=="get") {
 				mem[ptr]=int(getchar());
@@ -149,14 +158,14 @@ int runCode(string bcmd) {
 				mem[ptr]=s;
 			} else if (asplit[1]=="write") {
 				printf("%d",ptr);
-			} else if (asplit[1]=="say") {
-				printf("%s\n",asplit[2].c_str());
+			} else if (asplit[1]=="press") {
+				mem[ptr]=getch();
 			} else {
 				throws(bad_tell);
 			}
 		}
 	}
-	if (!mem.count(0)) return 0;
+	ret: if (!mem.count(0)) return 0;
 	else return mem[0]; 
 }
 

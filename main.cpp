@@ -80,8 +80,14 @@ void intp(void) {
 			else mem[dst]=0;
 		} else if (asplit[0]=="btel") {
 			check_parameter(2);
-			if (asplit[1]=="exit") return;
+			if (asplit[1]=="exit") {
+				return;
+			}
 			check_parameter(3);
+			if (asplit[1]=="say") {
+				printf("%s\n",asplit[2].c_str());
+				continue;
+			}
 			int ptr = getRealVal(&mem,asplit[2]);
 			if (asplit[1]=="get") {
 				mem[ptr]=int(getchar());
@@ -93,9 +99,9 @@ void intp(void) {
 				mem[ptr]=s;
 			} else if (asplit[1]=="write") {
 				printf("%d",ptr);
-			} else if (asplit[1]=="say") {
-				printf("%s\n",asplit[2].c_str());
-			}  else {
+			} else if (asplit[1]=="press") {
+				mem[ptr]=getch();
+			} else {
 				throws(bad_tell);
 			}
 		}
