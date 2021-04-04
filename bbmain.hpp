@@ -68,7 +68,7 @@ int runCode(string bcmd) {
 	jmpmap jmps;
 	ifdebug printf("Resolving...\n"); 
 	for (int i = 0; i < lsplit.size(); i++) {
-		asplit = split_arg(lsplit[i],false);
+		asplit = split_arg(lsplit[i],true);
 		if (asplit.size() < 1) continue;//ignore
 		if (asplit[0]=="bflg") {
 			if (asplit.size() < 2) return -1; // invaild symbol
@@ -76,7 +76,7 @@ int runCode(string bcmd) {
 		}
 	}
 	for (int i = 0; i < lsplit.size(); i++) {
-		asplit = split_arg(lsplit[i],false);
+		asplit = split_arg(lsplit[i],true);
 		if (asplit.size() < 1) continue; // no command already
 		if (asplit[0][0]==';') {
 			continue;
@@ -149,6 +149,8 @@ int runCode(string bcmd) {
 				mem[ptr]=s;
 			} else if (asplit[1]=="write") {
 				printf("%d",ptr);
+			} else if (asplit[1]=="say") {
+				printf("%s\n",asplit[2].c_str());
 			} else {
 				throws(bad_tell);
 			}

@@ -18,7 +18,7 @@ void intp(void) {
 	while (true) {
 		cout << endl << ">>> ";
 		getline(cin,s);
-		asplit = split_arg(s,false);
+		asplit = split_arg(s,true);
 		if (asplit.size() < 1) continue; // no command already
 		if (asplit[0][0]==';') {
 			continue;
@@ -93,7 +93,9 @@ void intp(void) {
 				mem[ptr]=s;
 			} else if (asplit[1]=="write") {
 				printf("%d",ptr);
-			} else {
+			} else if (asplit[1]=="say") {
+				printf("%s\n",asplit[2].c_str());
+			}  else {
 				throws(bad_tell);
 			}
 		}
