@@ -106,7 +106,18 @@ char __getVartype(string exp,map<string,int> int_varlist,map<string,pair<int*,in
 
 #define __op_comp_int(op) curr = (__getIntval(args[i],int_varlist,int_arrlist) op __getIntval(args[i+2],int_varlist,int_arrlist))
 #define __op_comp_str(op) curr = (__getStrval(args[i],int_varlist,int_arrlist,str_varlist,str_arrlist) op __getStrval(args[i+2],int_varlist,int_arrlist,str_varlist,str_arrlist)) 
+
 #define __op_proceed_int(op) int_var[iprocd[0]] = getIntval(iprocd[2]) op getIntval(iprocd[4])
+#define __op_proceeds_int(op) int_var[args[0]] = getIntval(args[2]) op getIntval(args[4])
+#define __op_proceeds_str(op) str_var[args[0]] = getStrval(args[2]) op getStrval(args[4])
+#define __op_proceeda_int(op) int_arr[args[0]].first[dnid] = getIntval(args[2]) op getIntval(args[4])
+#define __op_proceeda_str(op) str_arr[args[0]].first[dnid] = getStrval(args[2]) op getStrval(args[4])
+#define __op_singoc_int(op) int_var[args[0]] op getIntval(args[2])
+#define __op_singoc_str(op) str_var[args[0]] op getStrval(args[2])
+#define __op_singrc_int(op) int_var[args[0]] = (op getIntval(args[2]))
+#define __op_singoa_int(op) int_arr[args[0]].first[dnid] op getIntval(args[2])
+#define __op_singoa_str(op) str_arr[args[0]].first[dnid] op getStrval(args[2])
+#define __op_singra_int(op) int_arr[args[0]].first[dnid] = (op getIntval(args[2]))
 
 #define skipLines(opname) int j = i, stack = 0; \
 						while (true) { \
@@ -242,7 +253,7 @@ int runCode(string code) {
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
 					vector<string> iprocd = split_arg(*it,true,' ');
 					if (iprocd.size() == 2) {
-						pair<string,string> a = getArrayz(iprocd[2]);
+						pair<string,string> a = getArrayz(iprocd[1]);
 						string buf1 = a.first, buf2 = a.second;
 						int len = getIntval(buf2);
 						if (iprocd[0]=="int") {
@@ -414,43 +425,144 @@ int runCode(string code) {
 				
 			} else {
 				// setting variable value.
+				int dnid;
 				if (args.size() < 3) __throw(1);
 				switch (getVartype(args[0])) {
 					case 'i':
 						if (args.size() == 3) {
 					// a op b (including =! =~)
-					if (args[1] == "+=") {
-						
+					if (args[1] == "=") {
+						__op_singoc_int(=);
+					} else if (args[1] == "+=") {
+						__op_singoc_int(+=);
 					} else if (args[1] == "-=") {
-						
+						__op_singoc_int(-=);
 					} else if (args[1] == "*=") {
-						
+						__op_singoc_int(*=);
 					} else if (args[1] == "/=") {
-						
+						__op_singoc_int(/=);
 					} else if (args[1] == "%=") {
-						
+						__op_singoc_int(%=);
 					} else if (args[1] == "&=") {
-						
+						__op_singoc_int(&=);
 					} else if (args[1] == "|=") {
-						
+						__op_singoc_int(|=);
 					} else if (args[1] == "^=") {
-						
+						__op_singoc_int(^=);
 					} else if (args[1] == "=!") {
-						
+						__op_singrc_int(!);
 					} else if (args[1] == "=~") {
-						
+						__op_singrc_int(~);
 					} else __throw(3);
 				} else if (args.size() == 5) {
 					// a = b op c
 					if (args[1] != "=") __throw(1);
-					
-				}
-						break;
-					case 's':
+					if (args[3] == "+") {
+							__op_proceeds_int(+);
+						} else if (args[3] == "-") {
+							__op_proceeds_int(-);
+						} else if (args[3] == "*") {
+							__op_proceeds_int(*);
+						} else if (args[3] == "/") {
+							__op_proceeds_int(/);
+						} else if (args[3] == "%") {
+							__op_proceeds_int(%);
+						} else if (args[3] == "|") {
+							__op_proceeds_int(|);
+						} else if (args[3] == "&") {
+							__op_proceeds_int(&);
+						} else if (args[3] == "^") {
+							__op_proceeds_int(^);
+						} else if (args[3] == "||") {
+							__op_proceeds_int(||);
+						} else if (args[3] == "&&") {
+							__op_proceeds_int(&&);
+						} else {
+							__throw(3);
+						}
+				} else __throw(3);
 						break;
 					case 'I':
+						dnid = getIntval(getArrayz(args[0]).second);
+						if (args.size() == 3) {
+					// a op b (including =! =~)
+					if (args[1] == "=") {
+						__op_singoa_int(=);
+					} else if (args[1] == "+=") {
+						__op_singoa_int(+=);
+					} else if (args[1] == "-=") {
+						__op_singoa_int(-=);
+					} else if (args[1] == "*=") {
+						__op_singoa_int(*=);
+					} else if (args[1] == "/=") {
+						__op_singoa_int(/=);
+					} else if (args[1] == "%=") {
+						__op_singoa_int(%=);
+					} else if (args[1] == "&=") {
+						__op_singoa_int(&=);
+					} else if (args[1] == "|=") {
+						__op_singoa_int(|=);
+					} else if (args[1] == "^=") {
+						__op_singoa_int(^=);
+					} else if (args[1] == "=!") {
+						__op_singra_int(!);
+					} else if (args[1] == "=~") {
+						__op_singra_int(~);
+					} else __throw(3);
+				} else if (args.size() == 5) {
+					// a = b op c
+					if (args[1] != "=") __throw(1);
+					if (args[3] == "+") {
+							__op_proceeda_int(+);
+						} else if (args[3] == "-") {
+							__op_proceeda_int(-);
+						} else if (args[3] == "*") {
+							__op_proceeda_int(*);
+						} else if (args[3] == "/") {
+							__op_proceeda_int(/);
+						} else if (args[3] == "%") {
+							__op_proceeda_int(%);
+						} else if (args[3] == "|") {
+							__op_proceeda_int(|);
+						} else if (args[3] == "&") {
+							__op_proceeda_int(&);
+						} else if (args[3] == "^") {
+							__op_proceeda_int(^);
+						} else if (args[3] == "||") {
+							__op_proceeda_int(||);
+						} else if (args[3] == "&&") {
+							__op_proceeda_int(&&);
+						} else {
+							__throw(3);
+						}
+				} else __throw(3);
+						break;
+					case 's':
+						if (args.size() == 3) {
+							if (args[1] == "=") {
+								__op_singoc_str(=);
+							} else if (args[1] == "+=") {
+								__op_singoc_str(+=);
+							} else __throw(3);
+						} else if (args.size() == 5) {
+							if (args[3] == "+") {
+								__op_proceeds_str(+);
+							} else __throw(3);
+						} else __throw(3);
 						break;
 					case 'S':
+						dnid = getIntval(getArrayz(args[0]).second);
+						if (args.size() == 3) {
+							if (args[1] == "=") {
+								__op_singoa_str(=);
+							} else if (args[1] == "+=") {
+								__op_singoa_str(+=);
+							} else __throw(3);
+						} else if (args.size() == 5) {
+							if (args[3] == "+") {
+								__op_proceeds_str(+);
+							} else __throw(3);
+						} else __throw(3);
 						break;
 					default:
 						__throw(12);
