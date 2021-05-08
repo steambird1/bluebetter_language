@@ -45,13 +45,15 @@ vector<string> split_arg(string cmd,bool allow_quotes,char splitor) {
 		if (cmd[i]==splitor) {
 			if (inquote) {
 					buf = buf + splitor;
-					break;
+				} else {
+					argv.push_back(buf);
+					buf = "";
 				}
-				argv.push_back(buf);
-				buf = "";
 		} else if (cmd[i]=='"') {
-			if (allow_quotes) inquote = !inquote;
-				else buf = buf + '"';
+			if (allow_quotes) {
+				inquote = !inquote;
+			}
+			buf = buf + '"';
 		} else {
 			buf = buf + cmd[i];
 		}

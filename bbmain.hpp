@@ -3,12 +3,21 @@
 #include <map>
 #include <stack>
 #include <vector>
+#include <cstdio>
+#include <conio.h>
 using namespace std;
 
 #ifndef _BLUEBETTER_
 #define _BLUEBETTER_ 1
 
-#define __throw(errid) int_var["error"]=errid; goto cont
+#define DEBUG_MODE false
+#define PRINT_ERROR_INFO true
+#define EXIT_IN_ERROR true
+
+#define ifdebug if(DEBUG_MODE)
+
+// It'll be error if you don't do this!!!
+#define __throw(errid) do { int_var["error"]=errid; if (PRINT_ERROR_INFO) printf("An error was occured.\n\nError id: %d\n",errid); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
 
 bool isContain(string a,string b) {
 	return a.find(b) != string::npos;
@@ -45,7 +54,7 @@ pair<string,string> getDotz(string exp) {
 int __getIntval(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist) {
 	if (isdigit(exp[0])) {
 		return atoi(exp.c_str());
-	} else if (isContain(exp,"\"")) {
+	} else if (exp[0]=='"') {
 		return 0;
 	} else if (isContain(exp,"(")) {// or ")"
 		pair<string,string> a = getArrayz(exp);
@@ -65,8 +74,8 @@ int __getIntval(string exp,map<string,int> int_varlist,map<string,pair<int*,int>
 string __getStrval(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist,map<string,string> str_varlist,map<string,pair<string*,int> > str_arrlist) {
 	if (isdigit(exp[0])) {
 		return "";
-	} else if (isContain(exp,"\"")) {
-		return exp.substr(1,exp.length()-1);
+	} else if (exp[0]=='"') {
+		return exp.substr(1,exp.length()-2);
 	} else if (isContain(exp,"(")) {// or ")"
 		pair<string,string> a = getArrayz(exp);
 		string buf1 = a.first,buf2 = a.second;
@@ -81,18 +90,33 @@ string __getStrval(string exp,map<string,int> int_varlist,map<string,pair<int*,i
 }
 #define getStrval(exp) __getStrval(exp,int_var,int_arr,str_var,str_arr)
 
+char __getVartype(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist,map<string,string> str_varlist,map<string,pair<string*,int> > str_arrlist) {
+	if (isContain(exp,"(")) {
+		pair<string,string> a = getArrayz(exp);
+		if (int_arrlist.count(a.first)) return 'I';
+		if (str_arrlist.count(a.first)) return 'S';
+		return '?';
+	} else {
+		if (int_varlist.count(exp)) return 'i';
+		if (str_varlist.count(exp)) return 's';
+		return '?';
+	}
+}
+#define getVartype(exp) __getVartype(exp,int_var,int_arr,str_var,str_arr)
+
 #define __op_comp_int(op) curr = (__getIntval(args[i],int_varlist,int_arrlist) op __getIntval(args[i+2],int_varlist,int_arrlist))
 #define __op_comp_str(op) curr = (__getStrval(args[i],int_varlist,int_arrlist,str_varlist,str_arrlist) op __getStrval(args[i+2],int_varlist,int_arrlist,str_varlist,str_arrlist)) 
 #define __op_proceed_int(op) int_var[iprocd[0]] = getIntval(iprocd[2]) op getIntval(iprocd[4])
 
 #define skipLines(opname) int j = i, stack = 0; \
-						while (lines[j] != "end "#opname && stack <= 0) { \
+						while (true) { \
 							vector<string> argt = split_arg(lines[j],true,' '); \
-							if (argt[0]==#opname) stack++; \
+							if (argt[0]=="while" || argt[0]=="for" || argt[0]=="do" || argt[0]=="if") stack++; \
 							if (argt[0]=="end") stack--; \
+							if (lines[j] == (string("end ") + opname) && stack <= 0) break; \
 							j++; \
 						} \
-						i = j
+						i = j+1; goto fcont
 
 bool __getCond(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist,map<string,string> str_varlist,map<string,pair<string*,int> > str_arrlist) {
 	vector<string> args = split_arg(exp,true,' ');
@@ -130,6 +154,7 @@ bool __getCond(string exp,map<string,int> int_varlist,map<string,pair<int*,int> 
 			stat = curr;
 		}
 	}
+	return stat;
 }
 
 #define getCond(exp) __getCond(exp,int_var,int_arr,str_var,str_arr)
@@ -143,9 +168,12 @@ int runCode(string code) {
 	stack<int> calltrace;
 	int i = 0; // executor pointing
 	while (i < lines.size()) {
+		ifdebug printf("Processing command: %s\n",lines[i].c_str());
 		vector<string> args = split_arg(lines[i],true,' ');
 		if (args.size() != 0 && args[0][0]!='#') {
-			string attl = lines[i].substr(args[0].length()+1); // getting other things EXCEPT command
+			string attl;
+			if (args.size() > 1) attl = lines[i].substr(args[0].length()+1); // getting other things EXCEPT command
+			else attl = "";
 			if (args[0]=="int") {
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
@@ -191,8 +219,11 @@ int runCode(string code) {
 					vector<string> iprocd = split_arg(*it,true,' ');
 					if (iprocd.size() == 3) {
 						// a = (can only be) b
-						if (iprocd[1] != "=") __throw(1);
-						str_var[iprocd[0]] = getStrval(iprocd[2]);
+						if (iprocd[1] != "=") {
+							__throw(1);
+						}
+						string strv = getStrval(iprocd[2]);
+						str_var[iprocd[0]] = strv;
 					} else if (iprocd.size() == 5) {
 						// a = (can only be) b op c
 						if (iprocd[1] != "=") __throw(1);
@@ -234,7 +265,6 @@ int runCode(string code) {
 			} else if (args[0]=="for") {
 				// for i = a..b (2)
 				// collecting informations first
-				char buf1[1024], buf2[1024];
 				int begin,end,step=1;
 				if (args.size()!=4 && args.size()!=6) {
 					__throw(6);
@@ -253,7 +283,8 @@ int runCode(string code) {
 				} else {
 					if (int_var[args[1]] >= end) { // REMEMBER THIS OPERATOR!
 						int_var.erase(args[1]);
-						skipLines(for);
+						skipLines("for");
+						 // MUST JUMP TO NEXT!!!!!
 					} else {
 						int_var[args[1]] += step;
 					}
@@ -266,11 +297,13 @@ int runCode(string code) {
 			} else if (args[0]=="if" || args[0]=="elseif") {
 				if (!getCond(attl)) {
 					//skipLines(if);
-					int j = i, stack = 0;
+					int j = i+1, stack = 0;
 					while (true) {
+						j++;
 						vector<string> argt = split_arg(lines[j],true,' ');
 						if (argt[0] == "if") stack++;
-						if (argt[0] == "end") stack--;
+						if (argt[0] == "end" && argt.size() >= 2 && argt[1] == "if") stack--;
+						if (stack < 0) break;
 						if (argt[0] == "elseif" && stack == 0) break;
 						if (argt[0] == "else" && stack == 0) break;
 					}
@@ -278,33 +311,155 @@ int runCode(string code) {
 				}
 			} else if (args[0]=="elseif" || args[0]=="else") {
 				//;
-			} else if (args[0]=="end") {
+			} else if (args[0]=="end") { // remember to skip to the next line of "end"!
 				if (args.size() == 1) {
 					if (calltrace.empty()) return 0;
 					i = calltrace.top();
 					calltrace.pop();
+				} else {
+					int j = i, stack = 0;
+						while (true) { 
+							vector<string> argt = split_arg(lines[j],true,' '); 
+							if (argt[0]==args[1] && stack <= 0) break;
+							if (argt[0]=="while" || argt[0]=="for" || argt[0]=="do" || argt[0]=="if") stack++; 
+							if (argt[0]=="end") stack--; 
+							j--; 
+						} 
+						i = j;
+						goto fcont;
 				}
 			} else if (args[0]=="read") {
-				
+				// read int a, char b, str c
+				vector<string> ivars = split_arg(attl,true,',');
+				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
+					vector<string> iprocd = split_arg(*it,true,' ');
+					if (iprocd.size() == 2) {
+						int readi;
+						if (iprocd[0]=="int") {
+							scanf("%d",&readi);
+							int_var[iprocd[1]]=readi;
+						} else if (iprocd[0]=="char") {
+							scanf("%c",&readi);
+							int_var[iprocd[1]]=readi;
+						} else if (iprocd[0]=="str") {
+							char buf[1024];
+							scanf("%s",buf);
+							str_var[iprocd[1]]=string(buf);
+						} else __throw(10);
+					} else __throw(10);
+				}
 			} else if (args[0]=="readline") {
-				
+				// readline a (str)
+				if (args.size() != 2) __throw(10);
+				char buf[1024];
+				gets(buf);
+				str_var[args[1]]=string(buf);
 			} else if (args[0]=="readkey") {
-				
-			} else if (args[0]=="write") {
-				
+				// readkey a (int)
+				if (args.size() != 2) __throw(10);
+				int_var[args[1]]=getch();
+			} else if (args[0]=="write" || args[0]=="writeln") {
+				vector<string> ivars = split_arg(attl,true,',');
+				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
+					vector<string> iprocd = split_arg(*it,true,' ');
+					if (iprocd.size() == 2) {
+						if (iprocd[0]=="int") {
+							printf("%d",int_var[iprocd[1]]);
+						} else if (iprocd[0]=="char") {
+							printf("%c",int_var[iprocd[1]]);
+						} else if (iprocd[0]=="str") {
+							printf("%s",str_var[iprocd[1]].c_str());
+						} else {
+							__throw(10);
+						}
+					} else {
+						__throw(10);
+					}
+				}
+				if (args[0]=="writeln") printf("\n");
 			} else if (args[0]=="while") {
-				
+				if (!getCond(attl)) {
+					skipLines("while");
+				} // else go down
 			} else if (args[0]=="next") {
-				
+				int j = i, stack = 0; 
+						while (true) { 
+							vector<string> argt = split_arg(lines[j],true,' '); 
+							if (argt[0]=="end") stack++;
+							if (argt[0]=="while" || argt[0]=="for" || argt[0]=="do") stack--;
+							if (stack < 0) break; 
+							j--;
+						} 
+						i = j;
+						goto fcont;
 			} else if (args[0]=="do") {
-				
+				// nothing; keep going down
+			} else if (args[0]=="break") {
+				int j = i; 
+						while (true) { 
+							vector<string> argt = split_arg(lines[j],true,' '); 
+							if (argt[0]=="end") break; 
+							j++;
+						} 
+						i = j+1;
+						goto fcont;
 			} else if (args[0]=="ret") {
+				if (args.size() != 2) {
+					__throw(11);
+				}
+				return getIntval(args[1]); 
+			} else if (args[0]=="get") {
+				
+			} else if (args[0]=="set") {
 				
 			} else {
 				// setting variable value.
+				if (args.size() < 3) __throw(1);
+				switch (getVartype(args[0])) {
+					case 'i':
+						if (args.size() == 3) {
+					// a op b (including =! =~)
+					if (args[1] == "+=") {
+						
+					} else if (args[1] == "-=") {
+						
+					} else if (args[1] == "*=") {
+						
+					} else if (args[1] == "/=") {
+						
+					} else if (args[1] == "%=") {
+						
+					} else if (args[1] == "&=") {
+						
+					} else if (args[1] == "|=") {
+						
+					} else if (args[1] == "^=") {
+						
+					} else if (args[1] == "=!") {
+						
+					} else if (args[1] == "=~") {
+						
+					} else __throw(3);
+				} else if (args.size() == 5) {
+					// a = b op c
+					if (args[1] != "=") __throw(1);
+					
+				}
+						break;
+					case 's':
+						break;
+					case 'I':
+						break;
+					case 'S':
+						break;
+					default:
+						__throw(12);
+						break;
+				}
 			}
 		} // else: comment.
 		cont: i++; // continuing running next
+		fcont: ;// force continuing running next 
 	}
 }
 
