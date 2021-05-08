@@ -14,19 +14,46 @@ bool isContain(string a,string b) {
 	return a.find(b) != string::npos;
 }
  
+pair<string,string> getArrayz(string exp) {
+	string p[2]={"",""};
+	bool mode = false;
+	for (int i = 0; i < exp.length(); i++) {
+		if (exp[i]=='(') {
+			mode = true;
+		} else if (exp[i]==')') {
+			break;
+		} else {
+			p[int(mode)]+=exp[i];
+		}
+	} 
+	return make_pair(p[0],p[1]);
+}
+
+pair<string,string> getDotz(string exp) {
+	string p[2]={"",""};
+	bool mode = false;
+	for (int i = 0; i < exp.length(); i++) {
+		if (exp[i]=='.') {
+			mode = true;
+		}else {
+			p[int(mode)]+=exp[i];
+		}
+	} 
+	return make_pair(p[0],p[1]);
+}
+ 
 int __getIntval(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist) {
 	if (isdigit(exp[0])) {
 		return atoi(exp.c_str());
 	} else if (isContain(exp,"\"")) {
 		return 0;
 	} else if (isContain(exp,"(")) {// or ")"
-		char buf1[1024],buf2[1024];
-		sscanf(exp.c_str(),"%s(%s)",&buf1,&buf2);
-		string bf1 = buf1;
+		pair<string,string> a = getArrayz(exp);
+		string buf1 = a.first,buf2 = a.second;
 		int z = __getIntval(string(buf2),int_varlist,int_arrlist);
-		if (!int_arrlist.count(bf1)) return 0;
-		if (z < 0 || z >= int_arrlist[bf1].second) return 0;
-		return int_arrlist[bf1].first[z];
+		if (!int_arrlist.count(buf1)) return 0;
+		if (z < 0 || z >= int_arrlist[buf1].second) return 0;
+		return int_arrlist[buf1].first[z];
 	} else {
 		if (!int_varlist.count(exp)) return 0;
 		return int_varlist[exp];
@@ -41,13 +68,12 @@ string __getStrval(string exp,map<string,int> int_varlist,map<string,pair<int*,i
 	} else if (isContain(exp,"\"")) {
 		return exp.substr(1,exp.length()-1);
 	} else if (isContain(exp,"(")) {// or ")"
-		char buf1[1024],buf2[1024];
-		sscanf(exp.c_str(),"%s(%s)",&buf1,&buf2);
-		string bf1 = buf1;
+		pair<string,string> a = getArrayz(exp);
+		string buf1 = a.first,buf2 = a.second;
 		int z = __getIntval(string(buf2),int_varlist,int_arrlist);
-		if (!str_arrlist.count(bf1)) return "";
-		if (z < 0 || z >= str_arrlist[bf1].second) return "";
-		return str_arrlist[bf1].first[z];
+		if (!str_arrlist.count(buf1)) return "";
+		if (z < 0 || z >= str_arrlist[buf1].second) return "";
+		return str_arrlist[buf1].first[z];
 	} else {
 		if (!str_varlist.count(exp)) return "";
 		return str_varlist[exp];
@@ -185,8 +211,8 @@ int runCode(string code) {
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
 					vector<string> iprocd = split_arg(*it,true,' ');
 					if (iprocd.size() == 2) {
-						char buf1[1024],buf2[1024];
-						sscanf(iprocd[1].c_str(),"%s(%s)",buf1,buf2);
+						pair<string,string> a = getArrayz(iprocd[2]);
+						string buf1 = a.first, buf2 = a.second;
 						int len = getIntval(buf2);
 						if (iprocd[0]=="int") {
 							int_arr[string(buf1)] = make_pair(new int[len],len);
@@ -213,7 +239,9 @@ int runCode(string code) {
 				if (args.size()!=4 && args.size()!=6) {
 					__throw(6);
 				}
-				sscanf(args[3].c_str(),"%s..%s",buf1,buf2);
+				//sscanf(args[3].c_str(),"%s..%s",buf1,buf2);
+				pair<string,string> a = getDotz(args[3]);
+				string buf1 = a.first, buf2 = a.second;
 				begin = getIntval(string(buf1)); end = getIntval(string(buf2));
 				if (args.size()==6) {
 					step = atoi(args[5].c_str());
