@@ -350,17 +350,18 @@ int runCode(string code) {
 					//skipLines(if);
 					int j = i+1, stack = 0;
 					while (true) {
-						j++;
 						vector<string> argt = split_arg(lines[j],true,' ');
 						if (argt[0] == "if") stack++;
 						if (argt[0] == "end" && argt.size() >= 2 && argt[1] == "if") stack--;
 						if (stack < 0) break;
 						if (argt[0] == "elseif" && stack == 0) break;
 						if (argt[0] == "else" && stack == 0) break;
+						j++;
 					}
-					i = j;
+					ifdebug printf("Jumping to %d\n",j-1); 
+					i = j-1;
 				}
-			} else if (args[0]=="elseif" || args[0]=="else") {
+			} else if (args[0]=="else") {
 				//;
 			} else if (args[0]=="end") { // remember to skip to the next line of "end"!
 				if (args.size() == 1 || (args.size() == 2 && args[1] == "sub")) {
