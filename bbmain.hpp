@@ -515,7 +515,7 @@ int runCode(string code) {
 					if (spc.bsbegin >= str_var[spc.bsname].length()) __throw(15);
 					str_var[spc.bsname].erase(str_var[spc.bsname].begin()+spc.bsbegin); 
 				} else {
-					if (spc.bsbegin > spc.bsend || spc.bsend >= str_var[spc.bsname].length()) __throw(15);
+					if (spc.bsbegin > spc.bsend || spc.bsend > str_var[spc.bsname].length()) __throw(15);
 					str_var[spc.bsname].erase(str_var[spc.bsname].begin()+spc.bsbegin,str_var[spc.bsname].begin()+spc.bsend); 
 				}
 			} else if (args[0]=="insert") {
@@ -526,7 +526,7 @@ int runCode(string code) {
 				if (spc.bsbegin != spc.bsend) __throw(16);
 				if (args[2] == "char") {
 					int res = getIntval(args[3]), t = 1;
-					if (spc.bsbegin >= str_var[spc.bsname].length()) __throw(16);
+					if (spc.bsbegin > str_var[spc.bsname].length()) __throw(16);
 					if (args.size() == 6) {
 						t = getIntval(args[5]);
 						if (args[4] != "for" || t <= 0) __throw(17);
@@ -534,7 +534,7 @@ int runCode(string code) {
 					str_var[spc.bsname].insert(spc.bsbegin,t,char(res));
 				} else if (args[2] == "str") {
 					string res = getStrval(args[3]);
-					if (spc.bsbegin >= str_var[spc.bsname].length()) __throw(16);
+					if (spc.bsbegin > str_var[spc.bsname].length()) __throw(16);
 					str_var[spc.bsname].insert(spc.bsbegin,res);
 				} else __throw(16);
 			} else {
