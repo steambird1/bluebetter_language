@@ -331,7 +331,7 @@ int runCode(string code) {
 					// yes
 					int_var[args[1]] = begin;
 				} else {
-					if (int_var[args[1]] >= end) { // REMEMBER THIS OPERATOR!
+					if (int_var[args[1]] == end) { // REMEMBER THIS OPERATOR!
 						int_var.erase(args[1]);
 						skipLines("for");
 						 // MUST JUMP TO NEXT!!!!!
