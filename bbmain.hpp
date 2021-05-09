@@ -294,7 +294,7 @@ int runCode(string code) {
 						string buf1 = a.first, buf2 = a.second;
 						int len = getIntval(buf2);
 						ifdebug printf("Setting length: %d\n",len);
-						if (iprocd[0]=="int") {
+						if (iprocd[0]=="int" || iprocd[0]=="char") {
 							int_arr[string(buf1)] = make_pair(new int[len],len);
 						} else if (iprocd[0]=="str") {
 							str_arr[string(buf1)] = make_pair(new string[len],len);
