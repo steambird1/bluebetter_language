@@ -324,7 +324,7 @@ int runCode(string code) {
 				string buf1 = a.first, buf2 = a.second;
 				begin = getIntval(string(buf1)); end = getIntval(string(buf2));
 				if (args.size()==6) {
-					step = atoi(args[5].c_str());
+					step = getIntval(args[5]);
 				}
 				// first time running this?
 				if (!int_var.count(args[1])) {
