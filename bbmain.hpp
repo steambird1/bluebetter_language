@@ -10,6 +10,8 @@ using namespace std;
 #ifndef _BLUEBETTER_
 #define _BLUEBETTER_ 1
 
+#define BLUEBETTER_VER "v202105"
+
 #define DEBUG_MODE false
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
@@ -17,7 +19,7 @@ using namespace std;
 #define ifdebug if(DEBUG_MODE)
 
 // It'll be error if you don't do this!!!
-#define __throw(errid) do { int_var["error"]=errid; if (PRINT_ERROR_INFO) printf("An error was occured.\n\nError id: %d\n",errid); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
+#define __throw(errid) do { int_var["error"]=errid; if (PRINT_ERROR_INFO) printf("\nAn error was occured.\n\nError id: %d\n",errid); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
 
 bool isContain(string a,string b) {
 	return a.find(b) != string::npos;
@@ -210,6 +212,7 @@ int runCode(string code) {
 	vector<string> lines = spiltLines(code);
 	stack<int> calltrace;
 	int i = 0,rets = 0; // executor pointing
+	str_var["RESV_EMPTY"]="";// Reserved
 	while (i < lines.size()) {
 		ifdebug printf("Processing command: %s\n",lines[i].c_str());
 		vector<string> args = split_arg(lines[i],true,' ');
@@ -217,7 +220,7 @@ int runCode(string code) {
 			string attl;
 			if (args.size() > 1) attl = lines[i].substr(args[0].length()+1); // getting other things EXCEPT command
 			else attl = "";
-			if (args[0]=="int") {
+			if (args[0]=="int" || args[0]=="char") {
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
 					vector<string> iprocd = split_arg(*it,true,' ');
@@ -380,6 +383,7 @@ int runCode(string code) {
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
 					vector<string> iprocd = split_arg(*it,true,' ');
+					ifdebug printf(" Inputting %s: ",it->c_str());
 					if (iprocd.size() == 2) {
 						int readi;
 						if (iprocd[0]=="int") {
@@ -408,14 +412,15 @@ int runCode(string code) {
 			} else if (args[0]=="write" || args[0]=="writeln") {
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
+					ifdebug printf(" Outputting %s: ",it->c_str());
 					vector<string> iprocd = split_arg(*it,true,' ');
 					if (iprocd.size() == 2) {
 						if (iprocd[0]=="int") {
-							printf("%d",int_var[iprocd[1]]);
+							printf("%d",getIntval(iprocd[1]));
 						} else if (iprocd[0]=="char") {
-							printf("%c",int_var[iprocd[1]]);
+							printf("%c",getIntval(iprocd[1]));
 						} else if (iprocd[0]=="str") {
-							printf("%s",str_var[iprocd[1]].c_str());
+							printf("%s",(getStrval(iprocd[1])).c_str());
 						} else {
 							__throw(10);
 						}
@@ -472,7 +477,6 @@ int runCode(string code) {
 				strProcs spc = getSproc(args[1]);
 				if (!str_var.count(spc.bsname)) __throw(12);
 				string strv = getStrval(spc.bsname);
-				ifdebug printf("Setting %d to %d\n",spc.bsbegin,spc.bsend);
 				if (spc.bsbegin==spc.bsend) {
 					if (spc.bsbegin > strv.length()) __throw(13);
 					str_var[spc.bsname][spc.bsbegin] = char(getIntval(args[3]));

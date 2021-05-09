@@ -2,3 +2,6 @@
 *.exe
 *.o
 *.test.*
+test*.*
+*.xml
+Makefile.win
