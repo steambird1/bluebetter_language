@@ -110,14 +110,14 @@ char __getVartype(string exp,map<string,int> int_varlist,map<string,pair<int*,in
 #define __op_proceed_int(op) int_var[iprocd[0]] = getIntval(iprocd[2]) op getIntval(iprocd[4])
 #define __op_proceeds_int(op) int_var[args[0]] = getIntval(args[2]) op getIntval(args[4])
 #define __op_proceeds_str(op) str_var[args[0]] = getStrval(args[2]) op getStrval(args[4])
-#define __op_proceeda_int(op) int_arr[args[0]].first[dnid] = getIntval(args[2]) op getIntval(args[4])
-#define __op_proceeda_str(op) str_arr[args[0]].first[dnid] = getStrval(args[2]) op getStrval(args[4])
+#define __op_proceeda_int(op) int_arr[ps.first].first[dnid] = getIntval(args[2]) op getIntval(args[4])
+#define __op_proceeda_str(op) str_arr[ps.first].first[dnid] = getStrval(args[2]) op getStrval(args[4])
 #define __op_singoc_int(op) int_var[args[0]] op getIntval(args[2])
 #define __op_singoc_str(op) str_var[args[0]] op getStrval(args[2])
 #define __op_singrc_int(op) int_var[args[0]] = (op getIntval(args[2]))
-#define __op_singoa_int(op) int_arr[args[0]].first[dnid] op getIntval(args[2])
-#define __op_singoa_str(op) str_arr[args[0]].first[dnid] op getStrval(args[2])
-#define __op_singra_int(op) int_arr[args[0]].first[dnid] = (op getIntval(args[2]))
+#define __op_singoa_int(op) int_arr[ps.first].first[dnid] op getIntval(args[2])
+#define __op_singoa_str(op) str_arr[ps.first].first[dnid] op getStrval(args[2])
+#define __op_singra_int(op) int_arr[ps.first].first[dnid] = (op getIntval(args[2]))
 
 #define skipLines(opname) int j = i, stack = 0; \
 						while (true) { \
@@ -177,7 +177,7 @@ int runCode(string code) {
 	map<string,pair<string*,int> > str_arr;
 	vector<string> lines = spiltLines(code);
 	stack<int> calltrace;
-	int i = 0; // executor pointing
+	int i = 0,rets = 0; // executor pointing
 	while (i < lines.size()) {
 		ifdebug printf("Processing command: %s\n",lines[i].c_str());
 		vector<string> args = split_arg(lines[i],true,' ');
@@ -256,6 +256,7 @@ int runCode(string code) {
 						pair<string,string> a = getArrayz(iprocd[1]);
 						string buf1 = a.first, buf2 = a.second;
 						int len = getIntval(buf2);
+						ifdebug printf("Setting length: %d\n",len);
 						if (iprocd[0]=="int") {
 							int_arr[string(buf1)] = make_pair(new int[len],len);
 						} else if (iprocd[0]=="str") {
@@ -303,7 +304,7 @@ int runCode(string code) {
 			} else if (args[0]=="call") {
 				if (args.size() != 2) __throw(7);
 				if (!callist.count(args[1])) __throw(7);
-				calltrace.push(i);
+				calltrace.push(i+1); // don't run call again.
 				i = callist[args[1]];
 			} else if (args[0]=="if" || args[0]=="elseif") {
 				if (!getCond(attl)) {
@@ -323,8 +324,11 @@ int runCode(string code) {
 			} else if (args[0]=="elseif" || args[0]=="else") {
 				//;
 			} else if (args[0]=="end") { // remember to skip to the next line of "end"!
-				if (args.size() == 1) {
-					if (calltrace.empty()) return 0;
+				if (args.size() == 1 || (args.size() == 2 && args[1] == "sub")) {
+					if (calltrace.empty()) {
+						rets = 0;
+						goto ret;
+					}
 					i = calltrace.top();
 					calltrace.pop();
 				} else {
@@ -418,7 +422,8 @@ int runCode(string code) {
 				if (args.size() != 2) {
 					__throw(11);
 				}
-				return getIntval(args[1]); 
+				rets = getIntval(args[1]); 
+				goto ret;
 			} else if (args[0]=="get") {
 				
 			} else if (args[0]=="set") {
@@ -426,6 +431,7 @@ int runCode(string code) {
 			} else {
 				// setting variable value.
 				int dnid;
+				pair<string,string> ps;
 				if (args.size() < 3) __throw(1);
 				switch (getVartype(args[0])) {
 					case 'i':
@@ -483,11 +489,13 @@ int runCode(string code) {
 				} else __throw(3);
 						break;
 					case 'I':
-						dnid = getIntval(getArrayz(args[0]).second);
+						ps = getArrayz(args[0]);
+						dnid = getIntval(ps.second);
 						if (args.size() == 3) {
 					// a op b (including =! =~)
 					if (args[1] == "=") {
 						__op_singoa_int(=);
+					//	int_arr = getIntval(args[2]); // debug replacement
 					} else if (args[1] == "+=") {
 						__op_singoa_int(+=);
 					} else if (args[1] == "-=") {
@@ -551,7 +559,8 @@ int runCode(string code) {
 						} else __throw(3);
 						break;
 					case 'S':
-						dnid = getIntval(getArrayz(args[0]).second);
+						ps = getArrayz(args[0]);
+						dnid = getIntval(ps.second);
 						if (args.size() == 3) {
 							if (args[1] == "=") {
 								__op_singoa_str(=);
@@ -573,6 +582,14 @@ int runCode(string code) {
 		cont: i++; // continuing running next
 		fcont: ;// force continuing running next 
 	}
+	ret: ;
+	for (map<string,pair<int*,int> >::iterator it = int_arr.begin(); it != int_arr.end(); it++) {
+		delete[] it->second.first;
+	}
+	for (map<string,pair<string*,int> >::iterator it = str_arr.begin(); it != str_arr.end(); it++) {
+		delete[] it->second.first;
+	}
+	return rets;
 }
 
 #endif 
