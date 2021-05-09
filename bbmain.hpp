@@ -168,7 +168,10 @@ bool __getCond(string exp,map<string,int> int_varlist,map<string,pair<int*,int> 
 	bool stat; 
 	for (int i = 0; i < args.size(); i+=4) { // a op b op
 		bool curr;
-		if (args[i+1]=="==") {
+		char g0 = __getVartype(args[0],int_varlist,int_arrlist,str_varlist,str_arrlist);
+		switch (g0) {
+			case 'i': case 'I':
+				if (args[i+1]=="==") {
 			__op_comp_int(==);
 		} else if (args[i+1]=="!=") {
 			__op_comp_int(!=);
@@ -180,12 +183,17 @@ bool __getCond(string exp,map<string,int> int_varlist,map<string,pair<int*,int> 
 			__op_comp_int(<);
 		} else if (args[i+1]=="<=") {
 			__op_comp_int(<=);
-		} /*here are strings: I CAN'T GET TYPES*/ else if (args[i+1]=="===") {
+		}  else return false;
+				break;
+			case 's': case 'S':
+				if (args[i+1]=="==") {
 			__op_comp_str(==);
-		} else if (args[i+1]=="!==") {
+		} else if (args[i+1]=="!=") {
 			__op_comp_str(!=);
-		} /*nothing yet*/ else {
-			return false;
+		} else return false;
+				break;
+			default:
+				return false; // how do you compare this?
 		}
 		if (i!=0) {
 			if (args[i-1]=="||") {
