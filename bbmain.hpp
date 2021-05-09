@@ -12,7 +12,7 @@ using namespace std;
 
 #define BLUEBETTER_VER "v202105"
 
-#define DEBUG_MODE false
+#define DEBUG_MODE true
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
 
@@ -371,6 +371,7 @@ int runCode(string code) {
 					i = calltrace.top();
 					calltrace.pop();
 				} else {
+					if (args[1] == "if") goto cont;
 					int j = i, stack = 0;
 						while (true) { 
 							vector<string> argt = split_arg(lines[j],true,' '); 
