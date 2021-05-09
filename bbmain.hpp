@@ -12,7 +12,7 @@ using namespace std;
 
 #define BLUEBETTER_VER "v202105"
 
-#define DEBUG_MODE false
+#define DEBUG_MODE false 
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
 
@@ -309,7 +309,8 @@ int runCode(string code) {
 				if (args.size() != 2) {
 					__throw(5);
 				} else {
-					callist[args[1]] = i+1;
+					callist[args[1]] = i;
+					skipLines("sub");
 				}
 			} else if (args[0]=="for") {
 				// for i = a..b (2)
@@ -341,7 +342,7 @@ int runCode(string code) {
 			} else if (args[0]=="call") {
 				if (args.size() != 2) __throw(7);
 				if (!callist.count(args[1])) __throw(7);
-				calltrace.push(i+1); // don't run call again.
+				calltrace.push(i); // don't run call again.
 				i = callist[args[1]];
 			} else if (args[0]=="if" || args[0]=="elseif") {
 				if (!getCond(attl)) {
