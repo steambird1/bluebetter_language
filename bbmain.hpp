@@ -224,6 +224,7 @@ int runCode(string code) {
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
 					vector<string> iprocd = split_arg(*it,true,' ');
+					if (int_var.count(iprocd[0])) __throw(1); 
 					if (iprocd.size() == 3) {
 						// a = (can only be) b
 						if (iprocd[1] != "=") __throw(1);
@@ -263,6 +264,7 @@ int runCode(string code) {
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
 					vector<string> iprocd = split_arg(*it,true,' ');
+					if (iprocd.size() < 3 || !str_var.count(iprocd[0])) __throw(1);
 					if (iprocd.size() == 3) {
 						// a = (can only be) b
 						if (iprocd[1] != "=") {
