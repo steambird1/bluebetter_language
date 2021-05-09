@@ -484,7 +484,7 @@ int runCode(string code) {
 				if (!str_var.count(spc.bsname)) __throw(12);
 				string strv = getStrval(spc.bsname);
 				if (spc.bsbegin==spc.bsend) {
-					if (spc.bsbegin > strv.length()) __throw(13);
+					if (spc.bsbegin >= strv.length()) __throw(13);
 					str_var[spc.bsname][spc.bsbegin] = char(getIntval(args[3]));
 				} else {
 					if (spc.bsbegin > spc.bsend || spc.bsend >= strv.length()) __throw(13);
@@ -493,6 +493,41 @@ int runCode(string code) {
 						str_var[spc.bsname][i+spc.bsbegin] = s[i];
 					}
 				}
+			} else if (args[0]=="len") {
+				// getting length of string. len x = y
+				if (args.size() != 4) __throw(14);
+				if (args[2] != "=") __throw(14);
+				int_var[args[1]] = getStrval(args[3]).length();
+			} else if (args[0]=="erase") {
+				// erase a component of string. (int id / int comp) erase x(a)  erase x(a:b)
+				if (args.size() != 2) __throw(15);
+				strProcs spc = getSproc(args[1]);
+				if (spc.bsbegin==spc.bsend) {
+					if (spc.bsbegin >= str_var[spc.bsname].length()) __throw(15);
+					str_var[spc.bsname].erase(str_var[spc.bsname].begin()+spc.bsbegin); 
+				} else {
+					if (spc.bsbegin > spc.bsend || spc.bsend >= str_var[spc.bsname].length()) __throw(15);
+					str_var[spc.bsname].erase(str_var[spc.bsname].begin()+spc.bsbegin,str_var[spc.bsname].begin()+spc.bsend); 
+				}
+			} else if (args[0]=="insert") {
+				// insert a component of string. (char / str)  insert x(a) char (or str) y (for x)
+				if (args.size() != 4 && args.size() != 6) __throw(16);
+				strProcs spc = getSproc(args[1]);
+				if (!str_var.count(spc.bsname)) __throw(16);
+				if (spc.bsbegin != spc.bsend) __throw(16);
+				if (args[2] == "char") {
+					int res = getIntval(args[3]), t = 1;
+					if (spc.bsbegin >= str_var[spc.bsname].length()) __throw(16);
+					if (args.size() == 6) {
+						t = getIntval(args[5]);
+						if (args[4] != "for" || t <= 0) __throw(17);
+					} 
+					str_var[spc.bsname].insert(spc.bsbegin,t,char(res));
+				} else if (args[2] == "str") {
+					string res = getStrval(args[3]);
+					if (spc.bsbegin >= str_var[spc.bsname].length()) __throw(16);
+					str_var[spc.bsname].insert(spc.bsbegin,res);
+				} else __throw(16);
 			} else {
 				// setting variable value.
 				int dnid;
