@@ -12,7 +12,7 @@ using namespace std;
 
 #define BLUEBETTER_VER "v202105"
 
-#define DEBUG_MODE true
+#define DEBUG_MODE false
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
 
