@@ -22,6 +22,16 @@ using namespace std;
 bool isContain(string a,string b) {
 	return a.find(b) != string::npos;
 }
+
+struct strProcs {
+	string bsname;
+	int bsbegin;
+	int bsend;
+};
+
+inline strProcs __makeStrprocs(string bsname,int bsbegin,int bsend) {
+	strProcs _t; _t.bsbegin=bsbegin; _t.bsend=bsend; _t.bsname=bsname; return _t;
+}
  
 pair<string,string> getArrayz(string exp) {
 	string p[2]={"",""};
@@ -50,6 +60,7 @@ pair<string,string> getDotz(string exp) {
 	} 
 	return make_pair(p[0],p[1]);
 }
+
  
 int __getIntval(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist) {
 	if (isdigit(exp[0])) {
@@ -70,6 +81,27 @@ int __getIntval(string exp,map<string,int> int_varlist,map<string,pair<int*,int>
 } 
 
 #define getIntval(exp) __getIntval(exp,int_var,int_arr)
+
+strProcs __getSproc(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist) {
+	pair<string,string> s = getArrayz(exp);
+	string p[2]={"",""};
+	if (isContain(s.second,":")) {
+		bool mode = false;
+		for (int i = 0; i < s.second.length(); i++) {
+			if (s.second[i]==':') {
+				mode = true;
+			} else {
+				p[int(mode)]+=s.second[i];
+			}
+		}
+		return __makeStrprocs(s.first,__getIntval(p[0],int_varlist,int_arrlist),__getIntval(p[1],int_varlist,int_arrlist));
+	} else {
+		int at = __getIntval(s.second,int_varlist,int_arrlist);
+		return __makeStrprocs(s.first,at,at);
+	}
+}
+
+#define getSproc(exp) __getSproc(exp,int_var,int_arr)
 
 string __getStrval(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist,map<string,string> str_varlist,map<string,pair<string*,int> > str_arrlist) {
 	if (isdigit(exp[0])) {
@@ -424,10 +456,33 @@ int runCode(string code) {
 				}
 				rets = getIntval(args[1]); 
 				goto ret;
-			} else if (args[0]=="get") {
-				
+			} else if (args[0]=="get") { // Supports variable only
+				if (args.size() != 4 || args[2] != "=") __throw(12);
+				strProcs spc = getSproc(args[3]);
+				string strv = getStrval(spc.bsname);
+				if (spc.bsbegin==spc.bsend) {
+					if (spc.bsbegin >= strv.length()) __throw(13);
+					int_var[args[1]] = strv[spc.bsbegin];
+				} else {
+					if (spc.bsbegin > spc.bsend || spc.bsend >= strv.length()) __throw(13);
+					str_var[args[1]] = strv.substr(spc.bsbegin,spc.bsend-spc.bsbegin);
+				}
 			} else if (args[0]=="set") {
-				
+				if (args.size() != 4 || args[2] != "=") __throw(12);
+				strProcs spc = getSproc(args[1]);
+				if (!str_var.count(spc.bsname)) __throw(12);
+				string strv = getStrval(spc.bsname);
+				ifdebug printf("Setting %d to %d\n",spc.bsbegin,spc.bsend);
+				if (spc.bsbegin==spc.bsend) {
+					if (spc.bsbegin > strv.length()) __throw(13);
+					str_var[spc.bsname][spc.bsbegin] = char(getIntval(args[3]));
+				} else {
+					if (spc.bsbegin > spc.bsend || spc.bsend >= strv.length()) __throw(13);
+					string s = getStrval(args[3]);
+					for (int i = 0; i < (spc.bsend-spc.bsbegin); i++) {
+						str_var[spc.bsname][i+spc.bsbegin] = s[i];
+					}
+				}
 			} else {
 				// setting variable value.
 				int dnid;
