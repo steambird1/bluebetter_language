@@ -4,6 +4,7 @@
 #include <stack>
 #include <vector>
 #include <cstdio>
+#include <cstdlib>
 #include <conio.h>
 using namespace std;
 
@@ -13,13 +14,14 @@ using namespace std;
 #define BLUEBETTER_VER "v202105"
 
 #define DEBUG_MODE false
+#define STEP_BY_STEP false 
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
 
 #define ifdebug if(DEBUG_MODE)
 
 // It'll be error if you don't do this!!!
-#define __throw(errid) do { int_var["error"]=errid; if (PRINT_ERROR_INFO) printf("\nAn error was occured.\n\nError id: %d\n",errid); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
+#define __throw(errid) do { int_var["error"]=errid; if (PRINT_ERROR_INFO) printf("\nAn error was occured.\n\nError id: %d\n",(errid*1024)+__LINE__); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
 
 bool isContain(string a,string b) {
 	return a.find(b) != string::npos;
@@ -217,12 +219,13 @@ int runCode(string code) {
 	map<string,string> str_var;
 	map<string,pair<int*,int> > int_arr; // an memory space and length
 	map<string,pair<string*,int> > str_arr;
+	map<int,int> ijumpto; // after you execute ..., you should jump to ...
 	vector<string> lines = spiltLines(code);
 	stack<int> calltrace;
 	int i = 0,rets = 0; // executor pointing
 	str_var["RESV_EMPTY"]="";// Reserved
 	while (i < lines.size()) {
-		ifdebug printf("Processing command: %s\n",lines[i].c_str());
+		ifdebug printf("Processing [%d] command: %s\n",i,lines[i].c_str());
 		vector<string> args = split_arg(lines[i],true,' ');
 		if (args.size() != 0 && args[0][0]!='#') {
 			string attl;
@@ -335,6 +338,7 @@ int runCode(string code) {
 				if (args.size()==6) {
 					step = getIntval(args[5]);
 				}
+				if (begin == end) goto stop_for; // can't continue running
 				// first time running this?
 				if (!int_var.count(args[1])) {
 					// yes
@@ -343,7 +347,7 @@ int runCode(string code) {
 					int_var[args[1]] += step;
 					ifdebug printf("for: Begin = %d, End = %d, Int = %d\n",begin,end,int_var[args[1]]);
 					if (int_var[args[1]] == end) { // REMEMBER THIS OPERATOR!
-						int_var.erase(args[1]);
+						stop_for: int_var.erase(args[1]);
 						skipLines("for");
 						 // MUST JUMP TO NEXT!!!!!
 					} else {
@@ -360,6 +364,7 @@ int runCode(string code) {
 					int j = i+1, stack = 0;
 					while (true) {
 						vector<string> argt = split_arg(lines[j],true,' ');
+						ifdebug printf("S=%d ",stack);
 						if (argt[0] == "if") stack++;
 						if (argt[0] == "end" && argt.size() >= 2 && argt[1] == "if") stack--;
 						if (stack < 0) break;
@@ -367,8 +372,31 @@ int runCode(string code) {
 						if (argt[0] == "else" && stack == 0) break;
 						j++;
 					}
-					ifdebug printf("Jumping to %d\n",j-1); 
-					i = j-1;
+					ifdebug printf(" -- Jumping to %d\n",j); 
+					i = j;
+				} else {
+					int j = i+1, stack = 0, be;
+					while (true) {
+						vector<string> argt = split_arg(lines[j],true,' ');
+						if (argt[0] == "if") stack++;
+						if (argt[0] == "end" && argt.size() >= 2 && argt[1] == "if") stack--;
+						if (stack < 0) break;
+						if (argt[0] == "elseif" && stack == 0) break;
+						if (argt[0] == "else" && stack == 0) break;
+						j++;
+					}
+					//i = j-1;
+					be = j-1;
+					j = i, stack = 0; 
+						while (true) { 
+							vector<string> argt = split_arg(lines[j],true,' '); 
+							if (argt[0]=="while" || argt[0]=="for" || argt[0]=="do" || argt[0]=="if") stack++; 
+							if (argt[0]=="end") stack--; 
+							if (lines[j] == "end if" && stack <= 0) break; 
+							j++; 
+						} 
+						ijumpto[be]=j+1;
+					ifdebug printf("Jump to %d in %d then\n",j+1,be);
 				}
 			} else if (args[0]=="else") {
 				//;
@@ -385,13 +413,16 @@ int runCode(string code) {
 					int j = i, stack = 0;
 						while (true) { 
 							vector<string> argt = split_arg(lines[j],true,' '); 
-							if (argt[0]==args[1] && stack <= 0) break;
 							if (argt[0]=="while" || argt[0]=="for" || argt[0]=="do" || argt[0]=="if") stack++; 
 							if (argt[0]=="end") stack--; 
+							ifdebug printf("S=%d ",stack);
+							if (argt[0]==args[1] && stack == 0) break;
 							j--; 
+							
 						} 
-						i = j;
-						goto fcont;
+						i = j; goto fcont;
+				//		skipLines(args[1]);
+				ifdebug	printf("\n");
 				}
 			} else if (args[0]=="read") {
 				// read int a, char b, str c
@@ -688,8 +719,15 @@ int runCode(string code) {
 				}
 			}
 		} // else: comment.
-		cont: i++; // continuing running next
-		fcont: ;// force continuing running next 
+		cont: ;
+		if (ijumpto.count(i)) {
+			int tmp = i;
+			i = ijumpto[i];
+			ijumpto.erase(tmp); // see you then
+			ifdebug printf("Jumping to cause %d\n",i);
+		}
+		else i++; // continuing running next
+		fcont: if (STEP_BY_STEP) system("pause");// force continuing running next 
 	}
 	ret: ;
 	for (map<string,pair<int*,int> >::iterator it = int_arr.begin(); it != int_arr.end(); it++) {
