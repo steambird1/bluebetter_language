@@ -166,4 +166,7 @@ string __getStrval(string exp,_varlist<int> int_list,_varlist<string> str_list) 
 	}
 }
 
+#define getIntval(exp) __getIntval(exp,int_list)
+#define getStrval(exp) __getStrval(exp,int_list,str_list) 
+
 #endif
