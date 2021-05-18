@@ -1,4 +1,5 @@
 #include "shellexec.hpp"
+#include "bbvar.hpp" 
 #include <string>
 #include <map>
 #include <stack>
@@ -11,7 +12,8 @@ using namespace std;
 #ifndef _BLUEBETTER_
 #define _BLUEBETTER_ 1
 
-#define BLUEBETTER_VER "v202105"
+#define BLUEBETTER_VER "v202106"
+// It's really different, so we do this
 
 #define DEBUG_MODE false
 #define STEP_BY_STEP false 
@@ -23,10 +25,6 @@ using namespace std;
 // It'll be error if you don't do this!!!
 #define __throw(errid) do { int_var["error"]=errid; if (PRINT_ERROR_INFO) printf("\nAn error was occured.\n\nError id: %d\n",(errid*1024)+__LINE__); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
 
-bool isContain(string a,string b) {
-	return a.find(b) != string::npos;
-}
-
 struct strProcs {
 	string bsname;
 	int bsbegin;
@@ -35,21 +33,6 @@ struct strProcs {
 
 inline strProcs __makeStrprocs(string bsname,int bsbegin,int bsend) {
 	strProcs _t; _t.bsbegin=bsbegin; _t.bsend=bsend; _t.bsname=bsname; return _t;
-}
- 
-pair<string,string> getArrayz(string exp) {
-	string p[2]={"",""};
-	bool mode = false;
-	for (int i = 0; i < exp.length(); i++) {
-		if (exp[i]=='(') {
-			mode = true;
-		} else if (exp[i]==')') {
-			break;
-		} else {
-			p[int(mode)]+=exp[i];
-		}
-	} 
-	return make_pair(p[0],p[1]);
 }
 
 pair<string,string> getDotz(string exp) {
@@ -64,27 +47,6 @@ pair<string,string> getDotz(string exp) {
 	} 
 	return make_pair(p[0],p[1]);
 }
-
- 
-int __getIntval(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist) {
-	if (isdigit(exp[0])) {
-		return atoi(exp.c_str());
-	} else if (exp[0]=='"') {
-		return 0;
-	} else if (isContain(exp,"(")) {// or ")"
-		pair<string,string> a = getArrayz(exp);
-		string buf1 = a.first,buf2 = a.second;
-		int z = __getIntval(string(buf2),int_varlist,int_arrlist);
-		if (!int_arrlist.count(buf1)) return 0;
-		if (z < 0 || z >= int_arrlist[buf1].second) return 0;
-		return int_arrlist[buf1].first[z];
-	} else {
-		if (!int_varlist.count(exp)) return 0;
-		return int_varlist[exp];
-	}
-} 
-
-#define getIntval(exp) __getIntval(exp,int_var,int_arr)
 
 strProcs __getSproc(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist) {
 	pair<string,string> s = getArrayz(exp);
@@ -107,23 +69,8 @@ strProcs __getSproc(string exp,map<string,int> int_varlist,map<string,pair<int*,
 
 #define getSproc(exp) __getSproc(exp,int_var,int_arr)
 
-string __getStrval(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist,map<string,string> str_varlist,map<string,pair<string*,int> > str_arrlist) {
-	if (isdigit(exp[0])) {
-		return "";
-	} else if (exp[0]=='"') {
-		return exp.substr(1,exp.length()-2);
-	} else if (isContain(exp,"(")) {// or ")"
-		pair<string,string> a = getArrayz(exp);
-		string buf1 = a.first,buf2 = a.second;
-		int z = __getIntval(string(buf2),int_varlist,int_arrlist);
-		if (!str_arrlist.count(buf1)) return "";
-		if (z < 0 || z >= str_arrlist[buf1].second) return "";
-		return str_arrlist[buf1].first[z];
-	} else {
-		if (!str_varlist.count(exp)) return "";
-		return str_varlist[exp];
-	}
-}
+// Requires re-write
+#define getIntval(exp) __getIntval(exp,int_var,int_arr)
 #define getStrval(exp) __getStrval(exp,int_var,int_arr,str_var,str_arr)
 
 char __getVartype(string exp,map<string,int> int_varlist,map<string,pair<int*,int> > int_arrlist,map<string,string> str_varlist,map<string,pair<string*,int> > str_arrlist) {

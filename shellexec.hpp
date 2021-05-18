@@ -78,4 +78,23 @@ string pwd_input(void) {
 	return s;
 }
 
+bool isContain(string a,string b) {
+	return a.find(b) != string::npos;
+}
+
+pair<string,string> getArrayz(string exp) {
+	string p[2]={"",""};
+	bool mode = false;
+	for (int i = 0; i < exp.length(); i++) {
+		if (exp[i]=='(') {
+			mode = true;
+		} else if (exp[i]==')') {
+			break;
+		} else {
+			p[int(mode)]+=exp[i];
+		}
+	} 
+	return make_pair(p[0],p[1]);
+}
+
 #endif

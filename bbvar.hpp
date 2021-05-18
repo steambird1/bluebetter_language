@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <cstdio>
+#include "shellexec.hpp" 
 using namespace std;
 // Surely requires C++11
 
@@ -10,6 +11,9 @@ using namespace std;
 
 // Process start with "array_" means array.
 #define PROMPT_OUT_OF_RANGE true
+
+template <typename _varType> class _varlist;
+int __getIntval(string exp,_varlist<int> int_list);//decl
 
 template <typename _varType>
 class _varlist {
@@ -25,17 +29,24 @@ class _varlist {
 			varinfo.pop_back(); 
 			arrinfo.pop_back();
 		}
-		bool count(string varName) {
-			return bool(varinfo[varinfo.size()-1].count(varName)) || bool(arrinfo[arrinfo.size()-1].count(varName));
+		int count(string varName) {
+			return (varinfo[varinfo.size()-1].count(varName)*2) + (arrinfo[arrinfo.size()-1].count(varName));
 		}
-		bool countall(string varName) {
+		int countall(string varName) {
+			int a = 0;
 			for (auto i = varinfo.begin(); i != varinfo.end(); i++) {
-				if (i->count(varName)) return true;
+				if (i->count(varName)) {
+					a += 2;
+					break;
+				}
 			}
 			for (auto i = arrinfo.begin(); i != arrinfo.end(); i++) {
-				if (i->count(varName)) return true;
+				if (i->count(varName)) {
+					a += 1;
+					break;
+				}
 			}
-			return false;
+			return a;
 		}
 		bool declare(string varName, _varType value) {
 			if (this->count(varName)) return false; //declaring so you can't
@@ -109,9 +120,50 @@ class _varlist {
 		~_varlist() {
 			this->free();
 		}
+		friend int __getIntval(string,_varlist<int>);
+		friend string __getStrval(string,_varlist<int>,_varlist<string>);
 	private:
 		vector<map<string,_varType> > varinfo;
 		vector<map<string,pair<_varType*,int> > > arrinfo;
 };
+
+int __getIntval(string exp,_varlist<int> int_list) {
+	if (isdigit(exp[0])) {
+		return atoi(exp.c_str());
+	} else if (exp[0]=='"') {
+		return 0;
+	} else if (isContain(exp,"(")) {// or ")"
+		pair<string,string> a = getArrayz(exp);
+		string buf1 = a.first,buf2 = a.second;
+		int z = __getIntval(string(buf2),int_list);
+		if (int_list.countall(buf1)&1) {
+			if (z < 0 || z >= int_list.array_size(buf1)) return 0;
+			return int_list.array_get(buf1,z);
+		} else return 0;
+	} else {
+		if (int_list.countall(exp)&2) return int_list.get(exp);
+		else return 0;
+	}
+} 
+
+string __getStrval(string exp,_varlist<int> int_list,_varlist<string> str_list) {
+	if (isdigit(exp[0])) {
+		return exp; // automaticly stringz
+	} else if (exp[0]=='"') {
+		return exp.substr(1,exp.length()-2);
+	} else if (isContain(exp,"(")) {// or ")"
+		pair<string,string> a = getArrayz(exp);
+		string buf1 = a.first,buf2 = a.second;
+		int z = __getIntval(string(buf2),int_list);
+		if (int_list.countall(buf1)&1) {
+			if (z < 0 || z >= str_list.array_size(buf1)) return 0;
+			return str_list.array_get(buf1,z);
+		} else return 0;
+	} else {
+		if (str_list.countall(exp)&2) return str_list.get(exp);
+		else if (int_list.countall(exp)&2) return to_string(int_list.get(exp));
+		else return "";
+	}
+}
 
 #endif
