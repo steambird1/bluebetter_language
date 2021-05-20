@@ -853,7 +853,10 @@ int __runCode(string code, bool debugger, bool pipe) {
 			ifdebug printf("Jumping to cause %d\n",i);
 		}
 		else i++; // continuing running next
-		fcont: if (STEP_BY_STEP) system("pause");// force continuing running next 
+		fcont: if (debugger) {
+			
+		} 
+		if (STEP_BY_STEP) system("pause");// force continuing running next 
 	}
 	ret: ;
 	varfree();
