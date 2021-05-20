@@ -15,8 +15,8 @@ using namespace std;
 #define BLUEBETTER_VER "v202106"
 // It's really different, so we do this
 
-#define DEBUG_MODE true
-#define STEP_BY_STEP true
+#define DEBUG_MODE false
+#define STEP_BY_STEP false
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
 
@@ -198,9 +198,9 @@ char nameToType(string at, bool arrayw) {
 	return s;
 }
 
-#define varpush() do { int_list.push(); str_list.push(); } while (false)
-#define varpop() do { int_list.pop(); str_list.pop();} while (false)
-#define varfree() do { int_list.free(); str_list.free();} while (false)
+#define varpush() do { int_list.push(); str_list.push(); debugs("Pushing all (cur = %d,%d)\n",int_list.length(),str_list.length()); } while (false)
+#define varpop() do { int_list.pop(); str_list.pop(); debugs("Poping all (cur = %d,%d)\n",int_list.length(),str_list.length()); } while (false)
+#define varfree() do { int_list.free(); str_list.free(); debugs("Freeing all (cur = %d,%d)\n",int_list.length(),str_list.length()); } while (false)
 
 int runCode(string code) {
 	map<string,_call> callist;
@@ -353,7 +353,6 @@ int runCode(string code) {
 					// yes
 					debugs("Preparing for\n"); 
 					int_list.push(); // protect area
-					//str_list.push();
 					int_list.declare(args[1],begin);
 					varpush();
 					//int_var[args[1]] = begin;
@@ -377,8 +376,8 @@ int runCode(string code) {
 				calltrace.push(i); // don't run call again.
 				vector<string> ivars = split_arg(ga.second,true,',');
 				if (ivars.size() != callist[ga.first].call_var.size()) __throw(21);
-				int_list.push();
-				str_list.push();
+				debugs("Preparing variable pushing: \n");
+				varpush();
 				for (int i = 0; i < ivars.size(); i++) {
 					switch (callist[ga.first].call_var[i].first) {
 						case 'i':
@@ -390,6 +389,7 @@ int runCode(string code) {
 					}
 				}
 				getting = {'?',""}; // not looking for returns
+				//varpush();
 				i = callist[ga.first].callist;
 			} else if (args[0]=="function") {//CURRENTLY HERE
 				//...
@@ -455,6 +455,7 @@ int runCode(string code) {
 					}
 					ifdebug printf(" -- Jumping to %d\n",j); 
 					i = j;
+					goto fcont;
 				} else {
 					int j = i+1, stack = 0, be;
 					while (true) {
@@ -482,6 +483,7 @@ int runCode(string code) {
 				}
 			} else if (args[0]=="else") {
 				//;
+				varpush();
 			} else if (args[0]=="end") { // remember to skip to the next line of "end"!
 				if (args.size() == 1 || (args.size() == 2 && (args[1] == "sub" || args[1] == "function"))) {
 					if (calltrace.empty()) {
@@ -597,18 +599,25 @@ int runCode(string code) {
 					rets = getIntval(args[1]); 
 					goto ret;
 				} else {
-					varpop();
+					int si;
+					string ss;
 					switch (getting.ret_type) {
 						case 'i':
-							int_list.declare(getting.var_name,getIntval(args[1]));
+							si = getIntval(args[1]);
+							varpop();
+							int_list.declare(getting.var_name,si);
 							break;
 						case 's':
-							str_list.declare(getting.var_name,getStrval(args[1]));
+							ss = getStrval(args[1]);
+							varpop();
+							str_list.declare(getting.var_name,ss);
 							break;
 						default:
 							// do nothing yet
+							varpop();
 							break;
 					}
+					
 					i = calltrace.top();
 					calltrace.pop(); 
 				}
