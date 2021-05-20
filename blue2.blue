@@ -1,0 +1,10 @@
+function int a(int x)
+int z = x * 5
+writeln int z
+ret z
+end function
+
+for i = 0..5
+let w = a(i)
+writeln int w
+end for

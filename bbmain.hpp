@@ -15,12 +15,13 @@ using namespace std;
 #define BLUEBETTER_VER "v202106"
 // It's really different, so we do this
 
-#define DEBUG_MODE false
-#define STEP_BY_STEP false 
+#define DEBUG_MODE true
+#define STEP_BY_STEP true
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
 
 #define ifdebug if(DEBUG_MODE)
+#define debugs(...) ifdebug printf(__VA_ARGS__)
 
 // It'll be error if you don't do this!!!
 #define __throw(errid) do { if (PRINT_ERROR_INFO) printf("\nAn error was occured.\n\nError id: %d\n",(errid*1024)+__LINE__); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
@@ -211,6 +212,7 @@ int runCode(string code) {
 	_ret getting; // Getting value type
 	int i = 0,rets = 0; // executor pointing
 	while (i < lines.size()) {
+		debugs("Executing: %s\n",lines[i].c_str());
 		vector<string> args = split_arg(lines[i],true,' ');
 		if (args.size() != 0 && args[0][0]!='#') {
 			string attl;
@@ -345,14 +347,18 @@ int runCode(string code) {
 				}
 				if (begin == end) goto stop_for; // can't continue running
 				// first time running this?
-				if (!int_list.countall(args[1])&2) { // So you shouldn't declare the same variable outside.
+				debugs("for Counting: %d\n",int_list.countall(args[1]));
+				debugs("int layer: %d	str layer: %d\n",int_list.length(),str_list.length());
+				if (!(int_list.count(args[1])&2)) { // So you shouldn't declare the same variable outside.
 					// yes
+					debugs("Preparing for\n"); 
 					int_list.push(); // protect area
 					//str_list.push();
 					int_list.declare(args[1],begin);
 					varpush();
 					//int_var[args[1]] = begin;
 				} else {
+					debugs("Looper = %d\n",int_list.get(args[1]));
 					is = int_list.get(args[1]) + step; 
 					int_list.set(args[1],is);
 					//int_var[args[1]] += step;
@@ -362,7 +368,7 @@ int runCode(string code) {
 						varpop();
 						skipLines("for");
 						 // MUST JUMP TO NEXT!!!!!
-					}
+					} else varpush();
 				}
 			} else if (args[0]=="call") { // call a or call a(x) (DON'T REFER TO AN ARRAY)
 				if (args.size() < 1) __throw(21);
@@ -374,7 +380,7 @@ int runCode(string code) {
 				int_list.push();
 				str_list.push();
 				for (int i = 0; i < ivars.size(); i++) {
-					switch (callist[args[1]].call_var[i].first) {
+					switch (callist[ga.first].call_var[i].first) {
 						case 'i':
 							int_list.declare(callist[ga.first].call_var[i].second,getIntval(ivars[i]));
 							break;
@@ -404,23 +410,26 @@ int runCode(string code) {
 						}
 					}
 					_call cw = {i,callw,nameToType(args[1],false)};
-					callist[args[1]] = cw;
+					callist[s.first] = cw;
 					skipLines("function");
 			} else if (args[0]=="let") { // ADDED KEYWORD (let a = func(args,args))
 				// It's declarings
 				// write RET code first
 				if (args.size() < 4 || args[2] != "=") __throw(21);
 				pair<string,string> ga = getArrayz(args[3]);
+				debugs("Calling function: %s (%s)\n",ga.first.c_str(),ga.second.c_str());
 				if (!callist.count(ga.first)) __throw(7);
 				if (callist[ga.first].ret_type == '/') __throw(21); // trying to get a sub's return 
 				calltrace.push(i); // don't run call again.
 				vector<string> ivars = split_arg(ga.second,true,',');
 				if (ivars.size() != callist[ga.first].call_var.size()) __throw(21);
-				int_list.push();
-				str_list.push();
+				varpush(); 
+				debugs("Preparing function call... with ivars = %d\n",ivars.size());
 				for (int i = 0; i < ivars.size(); i++) {
-					switch (callist[args[1]].call_var[i].first) {
+					switch (callist[ga.first].call_var[i].first) {
 						case 'i':
+							debugs("Preparing declaring values...\n");
+							debugs("Declaring integer %s = %d\n",callist[ga.first].call_var[i].second.c_str(),getIntval(ivars[i]));
 							int_list.declare(callist[ga.first].call_var[i].second,getIntval(ivars[i]));
 							break;
 						case 's':

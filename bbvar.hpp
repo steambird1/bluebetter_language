@@ -117,6 +117,12 @@ class _varlist {
 				}
 			}
 		}
+		int length(void) {
+			return varinfo.size();
+		}
+		int array_length(void) {
+			return arrinfo.size();
+		}
 		~_varlist() {
 			this->free();
 		}
