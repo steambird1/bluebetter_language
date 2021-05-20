@@ -82,22 +82,42 @@ char __getVartype(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 		return '?';
 	}
 }
-#define getVartype(exp) __getVartype(exp,int_var,int_arr,str_var,str_arr)
+#define getVartype(exp) __getVartype(exp,int_list,str_list)
 
 #define __op_comp_int(op) curr = (__getIntval(args[i],int_list) op __getIntval(args[i+2],int_list))
 #define __op_comp_str(op) curr = (__getStrval(args[i],int_list,str_list) op __getStrval(args[i+2],int_list,str_list)) 
 
 #define __op_proceed_int(op) int_list.declare(iprocd[0],getIntval(iprocd[2]) op getIntval(iprocd[4]))
-#define __op_proceeds_int(op) int_var[args[0]] = getIntval(args[2]) op getIntval(args[4])
-#define __op_proceeds_str(op) str_var[args[0]] = getStrval(args[2]) op getStrval(args[4])
-#define __op_proceeda_int(op) int_arr[ps.first].first[dnid] = getIntval(args[2]) op getIntval(args[4])
+#define __op_proceeds_int(op) int_list.set(args[0],getIntval(args[2]) op getIntval(args[4]))
+#define __op_proceeds_str(op) str_list.set(args[0],getStrval(args[2]) op getStrval(args[4]))
+// str_var[args[0]] = getStrval(args[2]) op getStrval(args[4])
+#define __op_proceeda_int(op) int_list.array_set(ps.first,dnid,getIntval(args[2]) op getIntval(args[4]))
+//int_arr[ps.first].first[dnid] = getIntval(args[2]) op getIntval(args[4])
 #define __op_proceeda_str(op) str_arr[ps.first].first[dnid] = getStrval(args[2]) op getStrval(args[4])
-#define __op_singoc_int(op) int_var[args[0]] op getIntval(args[2])
-#define __op_singoc_str(op) str_var[args[0]] op getStrval(args[2])
-#define __op_singrc_int(op) int_var[args[0]] = (op getIntval(args[2]))
-#define __op_singoa_int(op) int_arr[ps.first].first[dnid] op getIntval(args[2])
-#define __op_singoa_str(op) str_arr[ps.first].first[dnid] op getStrval(args[2])
-#define __op_singra_int(op) int_arr[ps.first].first[dnid] = (op getIntval(args[2]))
+#define __op_singoc_int(op) do { \
+	int t = int_list.get(args[0]); int_list.set(args[0],t op getIntval(args[2])); \
+} while (false)
+#define __op_singoc_str(op) do { \
+	string t = str_list.get(args[0]); str_list.set(args[0],t op getIntval(args[2])); \
+} while (false)
+// str_var[args[0]] op getStrval(args[2])
+#define __op_singrc_int(op) do { \
+	int t = int_list.get(args[0]); int_list.set(args[0],(op getIntval(args[2]))); \
+} while (false)
+// int_var[args[0]] = (op getIntval(args[2]))
+#define __op_singoa_int(op) do { \
+	int t = int_list.array_get(ps.first,dnid); int_list.array_set(args[0],dnid,t op getIntval(args[2])); \
+} while (false)
+// int_list.array_set(args[0],dnid,t op getIntval(args[2]))
+// int_arr[ps.first].first[dnid] op getIntval(args[2])
+#define __op_singoa_str(op) do { \
+	string t = str_list.array_get(ps.first,dnid); str_list.array_set(args[0],dnid,t op getIntval(args[2])); \
+} while (false)
+// str_arr[ps.first].first[dnid] op getStrval(args[2])
+#define __op_singra_int(op) do { \
+	int t = int_list.array_get(ps.first,dnid); int_list.array_set(args[0],dnid,(op getIntval(args[2]))); \
+} while (false)
+//int_arr[ps.first].first[dnid] = (op getIntval(args[2]))
 
 #define skipLines(opname) do { int j = i, stack = 0; \
 						while (true) { \
@@ -179,6 +199,7 @@ char nameToType(string at, bool arrayw) {
 
 #define varpush() do { int_list.push(); str_list.push(); } while (false)
 #define varpop() do { int_list.pop(); str_list.pop();} while (false)
+#define varfree() do { int_list.free(); str_list.free();} while (false)
 
 int runCode(string code) {
 	map<string,_call> callist;
@@ -311,7 +332,7 @@ int runCode(string code) {
 			} else if (args[0]=="for") {
 				// for i = a..b (2)
 				// collecting informations first
-				int begin,end,step=1;
+				int begin,end,step=1,is;
 				if (args.size()!=4 && args.size()!=6) {
 					__throw(6);
 				}
@@ -332,11 +353,11 @@ int runCode(string code) {
 					varpush();
 					//int_var[args[1]] = begin;
 				} else {
-					int is = int_list.get(args[1]) + step; 
+					is = int_list.get(args[1]) + step; 
 					int_list.set(args[1],is);
 					//int_var[args[1]] += step;
 					if (is == end) { // REMEMBER THIS OPERATOR!
-						int_list.pop(); // ending
+						stop_for: int_list.pop(); // ending
 						//str_list.pop();
 						varpop();
 						skipLines("for");
@@ -593,7 +614,7 @@ int runCode(string code) {
 				} else {
 					if (spc.bsbegin > spc.bsend || spc.bsend >= strv.length()) __throw(13);
 					//str_var[args[1]] = strv.substr(spc.bsbegin,spc.bsend-spc.bsbegin);
-					str_list.declare(args[1],strv.substr(spc.bsbegin,spc.bsend-spc.bsbegin))
+					str_list.declare(args[1],strv.substr(spc.bsbegin,spc.bsend-spc.bsbegin));
 				}
 			} else if (args[0]=="set") {
 				if (args.size() != 4 || args[2] != "=") __throw(12);
@@ -616,39 +637,41 @@ int runCode(string code) {
 				// getting length of string. len x = y
 				if (args.size() != 4) __throw(14);
 				if (args[2] != "=") __throw(14);
-				int_var[args[1]] = getStrval(args[3]).length();
+				int_list.declare(args[1],getStrval(args[3]).length());
 			} else if (args[0]=="erase") {
 				// erase a component of string. (int id / int comp) erase x(a)  erase x(a:b)
 				if (args.size() != 2) __throw(15);
 				strProcs spc = getSproc(args[1]);
 				string strv = str_list.get(spc.bsname);
 				if (spc.bsbegin==spc.bsend) {
-					if (spc.bsbegin >= str_var[spc.bsname].length()) __throw(15);
-					strv.erase(str_var[spc.bsname].begin()+spc.bsbegin); 
+					if (spc.bsbegin >= strv.length()) __throw(15);
+					strv.erase(strv.begin()+spc.bsbegin); 
 				} else {
-					if (spc.bsbegin > spc.bsend || spc.bsend > str_var[spc.bsname].length()) __throw(15);
-					strv.erase(str_var[spc.bsname].begin()+spc.bsbegin,str_var[spc.bsname].begin()+spc.bsend); 
+					if (spc.bsbegin > spc.bsend || spc.bsend > strv.length()) __throw(15);
+					strv.erase(strv.begin()+spc.bsbegin,strv.begin()+spc.bsend); 
 				}
-				str_list.set(spc.bsname,strv); // HERE
+				str_list.set(spc.bsname,strv);
 			} else if (args[0]=="insert") {
 				// insert a component of string. (char / str)  insert x(a) char (or str) y (for x)
 				if (args.size() != 4 && args.size() != 6) __throw(16);
 				strProcs spc = getSproc(args[1]);
-				if (!str_var.count(spc.bsname)) __throw(16);
+				if (!str_list.countall(spc.bsname)&2) __throw(16);
+				string strv = str_list.get(spc.bsname);
 				if (spc.bsbegin != spc.bsend) __throw(16);
 				if (args[2] == "char") {
 					int res = getIntval(args[3]), t = 1;
-					if (spc.bsbegin > str_var[spc.bsname].length()) __throw(16);
+					if (spc.bsbegin > strv.length()) __throw(16);
 					if (args.size() == 6) {
 						t = getIntval(args[5]);
 						if (args[4] != "for" || t <= 0) __throw(17);
 					} 
-					str_var[spc.bsname].insert(spc.bsbegin,t,char(res));
+					strv.insert(spc.bsbegin,t,char(res));
 				} else if (args[2] == "str") {
 					string res = getStrval(args[3]);
-					if (spc.bsbegin > str_var[spc.bsname].length()) __throw(16);
-					str_var[spc.bsname].insert(spc.bsbegin,res);
+					if (spc.bsbegin > strv.length()) __throw(16);
+					strv.insert(spc.bsbegin,res);
 				} else __throw(16);
+				str_list.set(spc.bsname,strv); // HERE
 			} else {
 				// setting variable value.
 				int dnid;
@@ -812,12 +835,7 @@ int runCode(string code) {
 		fcont: if (STEP_BY_STEP) system("pause");// force continuing running next 
 	}
 	ret: ;
-	for (map<string,pair<int*,int> >::iterator it = int_arr.begin(); it != int_arr.end(); it++) {
-		delete[] it->second.first;
-	}
-	for (map<string,pair<string*,int> >::iterator it = str_arr.begin(); it != str_arr.end(); it++) {
-		delete[] it->second.first;
-	}
+	varfree();
 	return rets;
 }
 
