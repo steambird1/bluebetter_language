@@ -324,7 +324,7 @@ int runCode(string code) {
 				}
 				if (begin == end) goto stop_for; // can't continue running
 				// first time running this?
-				if (!int_list.count(args[1])) {
+				if (!int_list.countall(args[1])&2) { // So you shouldn't declare the same variable outside.
 					// yes
 					int_list.push(); // protect area
 					//str_list.push();
@@ -386,6 +386,7 @@ int runCode(string code) {
 					callist[args[1]] = cw;
 					skipLines("function");
 			} else if (args[0]=="let") { // ADDED KEYWORD (let a = func(args,args))
+				// It's declarings
 				// write RET code first
 				if (args.size() < 4 || args[2] != "=") __throw(21);
 				pair<string,string> ga = getArrayz(args[3]);
@@ -557,7 +558,7 @@ int runCode(string code) {
 							j++;
 						} 
 						i = j+1;
-						goto fcont; // HERE
+						goto fcont;
 			} else if (args[0]=="ret") {
 				if (args.size() != 2) {
 					__throw(11);
@@ -566,32 +567,49 @@ int runCode(string code) {
 					rets = getIntval(args[1]); 
 					goto ret;
 				} else {
-					
+					varpop();
+					switch (getting.ret_type) {
+						case 'i':
+							int_list.declare(getting.var_name,getIntval(args[1]));
+							break;
+						case 's':
+							str_list.declare(getting.var_name,getStrval(args[1]));
+							break;
+						default:
+							// do nothing yet
+							break;
+					}
+					i = calltrace.top();
+					calltrace.pop(); 
 				}
-			} else if (args[0]=="get") { // Supports variable only
+			} else if (args[0]=="get") { // Supports variable only; It's declaring
 				if (args.size() != 4 || args[2] != "=") __throw(12);
 				strProcs spc = getSproc(args[3]);
 				string strv = getStrval(spc.bsname);
 				if (spc.bsbegin==spc.bsend) {
 					if (spc.bsbegin >= strv.length()) __throw(13);
-					int_var[args[1]] = strv[spc.bsbegin];
+					//int_var[args[1]] = strv[spc.bsbegin];
+					int_list.declare(args[1],strv[spc.bsbegin]);
 				} else {
 					if (spc.bsbegin > spc.bsend || spc.bsend >= strv.length()) __throw(13);
-					str_var[args[1]] = strv.substr(spc.bsbegin,spc.bsend-spc.bsbegin);
+					//str_var[args[1]] = strv.substr(spc.bsbegin,spc.bsend-spc.bsbegin);
+					str_list.declare(args[1],strv.substr(spc.bsbegin,spc.bsend-spc.bsbegin))
 				}
 			} else if (args[0]=="set") {
 				if (args.size() != 4 || args[2] != "=") __throw(12);
 				strProcs spc = getSproc(args[1]);
-				if (!str_var.count(spc.bsname)) __throw(12);
+				if (!str_list.countall(spc.bsname)&2) __throw(12);
 				string strv = getStrval(spc.bsname);
 				if (spc.bsbegin==spc.bsend) {
 					if (spc.bsbegin >= strv.length()) __throw(13);
-					str_var[spc.bsname][spc.bsbegin] = char(getIntval(args[3]));
+					strv[spc.bsbegin] = char(getIntval(args[3]));
+					str_list.set(spc.bsname,strv);
 				} else {
 					if (spc.bsbegin > spc.bsend || spc.bsend >= strv.length()) __throw(13);
 					string s = getStrval(args[3]);
 					for (int i = 0; i < (spc.bsend-spc.bsbegin); i++) {
-						str_var[spc.bsname][i+spc.bsbegin] = s[i];
+						strv[i+spc.bsbegin] = s[i];
+						str_list.set(spc.bsname,strv);
 					}
 				}
 			} else if (args[0]=="len") {
@@ -603,13 +621,15 @@ int runCode(string code) {
 				// erase a component of string. (int id / int comp) erase x(a)  erase x(a:b)
 				if (args.size() != 2) __throw(15);
 				strProcs spc = getSproc(args[1]);
+				string strv = str_list.get(spc.bsname);
 				if (spc.bsbegin==spc.bsend) {
 					if (spc.bsbegin >= str_var[spc.bsname].length()) __throw(15);
-					str_var[spc.bsname].erase(str_var[spc.bsname].begin()+spc.bsbegin); 
+					strv.erase(str_var[spc.bsname].begin()+spc.bsbegin); 
 				} else {
 					if (spc.bsbegin > spc.bsend || spc.bsend > str_var[spc.bsname].length()) __throw(15);
-					str_var[spc.bsname].erase(str_var[spc.bsname].begin()+spc.bsbegin,str_var[spc.bsname].begin()+spc.bsend); 
+					strv.erase(str_var[spc.bsname].begin()+spc.bsbegin,str_var[spc.bsname].begin()+spc.bsend); 
 				}
+				str_list.set(spc.bsname,strv); // HERE
 			} else if (args[0]=="insert") {
 				// insert a component of string. (char / str)  insert x(a) char (or str) y (for x)
 				if (args.size() != 4 && args.size() != 6) __throw(16);
