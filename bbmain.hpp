@@ -202,7 +202,7 @@ char nameToType(string at, bool arrayw) {
 #define varpop() do { int_list.pop(); str_list.pop(); debugs("Poping all (cur = %d,%d)\n",int_list.length(),str_list.length()); } while (false)
 #define varfree() do { int_list.free(); str_list.free(); debugs("Freeing all (cur = %d,%d)\n",int_list.length(),str_list.length()); } while (false)
 
-int runCode(string code) {
+int __runCode(string code, bool debugger, bool pipe) {
 	map<string,_call> callist;
 	_varlist<int> int_list;
 	_varlist<string> str_list; 
@@ -858,6 +858,10 @@ int runCode(string code) {
 	ret: ;
 	varfree();
 	return rets;
+}
+
+inline int runCode(string code) {
+	return __runCode(code,false,false);
 }
 
 #endif 
