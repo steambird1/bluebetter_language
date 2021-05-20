@@ -48,7 +48,7 @@ pair<string,string> getDotz(string exp) {
 	return make_pair(p[0],p[1]);
 }
 
-strProcs __getSproc(string exp,_varlist<int> int_list,_varlist<string> str_list) {
+strProcs __getSproc(string exp,_varlist<int> int_list) {
 	pair<string,string> s = getArrayz(exp);
 	string p[2]={"",""};
 	if (isContain(s.second,":")) {
@@ -67,7 +67,7 @@ strProcs __getSproc(string exp,_varlist<int> int_list,_varlist<string> str_list)
 	}
 }
 
-#define getSproc(exp) __getSproc(exp,int_var,int_arr)
+#define getSproc(exp) __getSproc(exp,int_list)
 
 
 char __getVartype(string exp,_varlist<int> int_list,_varlist<string> str_list) {
@@ -99,7 +99,7 @@ char __getVartype(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 #define __op_singoa_str(op) str_arr[ps.first].first[dnid] op getStrval(args[2])
 #define __op_singra_int(op) int_arr[ps.first].first[dnid] = (op getIntval(args[2]))
 
-#define skipLines(opname) int j = i, stack = 0; \
+#define skipLines(opname) do { int j = i, stack = 0; \
 						while (true) { \
 							vector<string> argt = split_arg(lines[j],true,' '); \
 							if (argt[0]=="while" || argt[0]=="for" || argt[0]=="do" || argt[0]=="if") stack++; \
@@ -107,7 +107,7 @@ char __getVartype(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 							if (lines[j] == (string("end ") + opname) && stack <= 0) break; \
 							j++; \
 						} \
-						i = j+1; goto fcont
+						i = j+1; goto fcont; } while (false)
 
 bool __getCond(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 	vector<string> args = split_arg(exp,true,' ');
@@ -161,6 +161,12 @@ bool __getCond(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 struct _call {
 	int callist;
 	vector<pair<char,string> > call_var;
+	char ret_type;
+};
+
+struct _ret {
+	char ret_type;
+	string var_name;
 };
 
 char nameToType(string at, bool arrayw) {
@@ -171,6 +177,9 @@ char nameToType(string at, bool arrayw) {
 	return s;
 }
 
+#define varpush() do { int_list.push(); str_list.push(); } while (false)
+#define varpop() do { int_list.pop(); str_list.pop();} while (false)
+
 int runCode(string code) {
 	map<string,_call> callist;
 	_varlist<int> int_list;
@@ -178,6 +187,7 @@ int runCode(string code) {
 	map<int,int> ijumpto; // after you execute ..., you should jump to ...
 	vector<string> lines = spiltLines(code);
 	stack<int> calltrace;
+	_ret getting; // Getting value type
 	int i = 0,rets = 0; // executor pointing
 	while (i < lines.size()) {
 		vector<string> args = split_arg(lines[i],true,' ');
@@ -275,12 +285,12 @@ int runCode(string code) {
 				}
 			} else if (args[0]=="sub") {
 				// Modified to: parameters supports ( sub a(int a, str b) )
-				if (args.size() != 2) {
+				if (args.size() < 2) {
 					__throw(5);
 				} else {
 					//callist[args[1]] = i;
 					// Just push and set variables in "call".
-					pair<string,string> s = getArrayz(args[1]);
+					pair<string,string> s = getArrayz(attl);
 					vector<pair<char,string> > callw;
 					vector<string> ivars = split_arg(s.second,true,',');
 					for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
@@ -294,7 +304,7 @@ int runCode(string code) {
 								break;
 						}
 					}
-					_call cw = {i,callw};
+					_call cw = {i,callw,'/'};
 					callist[args[1]] = cw;
 					skipLines("sub");
 				}
@@ -316,9 +326,10 @@ int runCode(string code) {
 				// first time running this?
 				if (!int_list.count(args[1])) {
 					// yes
-					int_list.push(); // entering for loop
-					str_list.push();
+					int_list.push(); // protect area
+					//str_list.push();
 					int_list.declare(args[1],begin);
+					varpush();
 					//int_var[args[1]] = begin;
 				} else {
 					int is = int_list.get(args[1]) + step; 
@@ -326,33 +337,77 @@ int runCode(string code) {
 					//int_var[args[1]] += step;
 					if (is == end) { // REMEMBER THIS OPERATOR!
 						int_list.pop(); // ending
-						str_list.pop();
+						//str_list.pop();
+						varpop();
 						skipLines("for");
 						 // MUST JUMP TO NEXT!!!!!
 					}
 				}
-			} else if (args[0]=="call") {
-				//if (args.size() != 2) __throw(7);
-				if (!callist.count(args[1])) __throw(7);
+			} else if (args[0]=="call") { // call a or call a(x) (DON'T REFER TO AN ARRAY)
+				if (args.size() < 1) __throw(21);
+				pair<string,string> ga = getArrayz(attl);
+				if (!callist.count(ga.first)) __throw(7);
 				calltrace.push(i); // don't run call again.
-				vector<string> ivars = split_arg(attl,true,',');
-				if (ivars.size() != callist[args[1]].call_var.size()) __throw(21);
+				vector<string> ivars = split_arg(ga.second,true,',');
+				if (ivars.size() != callist[ga.first].call_var.size()) __throw(21);
 				int_list.push();
 				str_list.push();
-				//for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
 				for (int i = 0; i < ivars.size(); i++) {
 					switch (callist[args[1]].call_var[i].first) {
 						case 'i':
-							int_list.declare(callist[args[1]].call_var[i].second,getIntval(ivars[i]));
+							int_list.declare(callist[ga.first].call_var[i].second,getIntval(ivars[i]));
 							break;
 						case 's':
-							str_list.declare(callist[args[1]].call_var[i].second,getStrval(ivars[i]));
+							str_list.declare(callist[ga.first].call_var[i].second,getStrval(ivars[i]));
 							break;
 					}
 				}
-				i = callist[args[1]].callist;
+				getting = {'?',""}; // not looking for returns
+				i = callist[ga.first].callist;
 			} else if (args[0]=="function") {//CURRENTLY HERE
 				//...
+				if (args.size() < 1) __throw(22);
+				string attl2 = attl.substr(args[1].length()+1);
+				pair<string,string> s = getArrayz(attl2);
+					vector<pair<char,string> > callw;
+					vector<string> ivars = split_arg(s.second,true,',');
+					for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
+						vector<string> iprocd = split_arg(*it,true,' ');
+						switch (iprocd.size()) {
+							case 2:
+								callw.push_back(make_pair(nameToType(iprocd[0],false),iprocd[1]));
+								break;
+							default:
+								__throw(20);
+								break;
+						}
+					}
+					_call cw = {i,callw,nameToType(args[1],false)};
+					callist[args[1]] = cw;
+					skipLines("function");
+			} else if (args[0]=="let") { // ADDED KEYWORD (let a = func(args,args))
+				// write RET code first
+				if (args.size() < 4 || args[2] != "=") __throw(21);
+				pair<string,string> ga = getArrayz(args[3]);
+				if (!callist.count(ga.first)) __throw(7);
+				if (callist[ga.first].ret_type == '/') __throw(21); // trying to get a sub's return 
+				calltrace.push(i); // don't run call again.
+				vector<string> ivars = split_arg(ga.second,true,',');
+				if (ivars.size() != callist[ga.first].call_var.size()) __throw(21);
+				int_list.push();
+				str_list.push();
+				for (int i = 0; i < ivars.size(); i++) {
+					switch (callist[args[1]].call_var[i].first) {
+						case 'i':
+							int_list.declare(callist[ga.first].call_var[i].second,getIntval(ivars[i]));
+							break;
+						case 's':
+							str_list.declare(callist[ga.first].call_var[i].second,getStrval(ivars[i]));
+							break;
+					}
+				}
+				getting = {callist[ga.first].ret_type,args[1]};
+				i = callist[ga.first].callist;
 			} else if (args[0]=="if" || args[0]=="elseif") {
 				if (!getCond(attl)) {
 					//skipLines(if);
@@ -391,12 +446,13 @@ int runCode(string code) {
 							j++; 
 						} 
 						ijumpto[be]=j+1;
+					varpush();
 					ifdebug printf("Jump to %d in %d then\n",j+1,be);
 				}
 			} else if (args[0]=="else") {
 				//;
 			} else if (args[0]=="end") { // remember to skip to the next line of "end"!
-				if (args.size() == 1 || (args.size() == 2 && args[1] == "sub")) {
+				if (args.size() == 1 || (args.size() == 2 && (args[1] == "sub" || args[1] == "function"))) {
 					if (calltrace.empty()) {
 						rets = 0;
 						goto ret;
@@ -404,6 +460,7 @@ int runCode(string code) {
 					i = calltrace.top();
 					calltrace.pop();
 				} else {
+					varpop();
 					if (args[1] == "if") goto cont;
 					int j = i, stack = 0;
 						while (true) { 
@@ -420,7 +477,7 @@ int runCode(string code) {
 				ifdebug	printf("\n");
 				}
 			} else if (args[0]=="read") {
-				// read int a, char b, str c
+				// read int a, char b, str c (variables are declaring!)
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
 					vector<string> iprocd = split_arg(*it,true,' ');
@@ -429,14 +486,17 @@ int runCode(string code) {
 						int readi;
 						if (iprocd[0]=="int") {
 							scanf("%d",&readi);
-							int_var[iprocd[1]]=readi;
+							//int_var[iprocd[1]]=readi;
+							int_list.declare(iprocd[1],readi);
 						} else if (iprocd[0]=="char") {
 							scanf("%c",&readi);
-							int_var[iprocd[1]]=readi;
+							//int_var[iprocd[1]]=readi;
+							int_list.declare(iprocd[1],readi);
 						} else if (iprocd[0]=="str") {
 							char buf[1024];
 							scanf("%s",buf);
-							str_var[iprocd[1]]=string(buf);
+							//str_var[iprocd[1]]=string(buf);
+							str_list.declare(iprocd[1],string(buf));
 						} else __throw(10);
 					} else __throw(10);
 				}
@@ -445,11 +505,13 @@ int runCode(string code) {
 				if (args.size() != 2) __throw(10);
 				char buf[1024];
 				gets(buf);
-				str_var[args[1]]=string(buf);
+				//str_var[args[1]]=string(buf);
+				str_list.declare(args[1],string(buf));
 			} else if (args[0]=="readkey") {
 				// readkey a (int)
 				if (args.size() != 2) __throw(10);
-				int_var[args[1]]=getch();
+				//int_var[args[1]]=getch();
+				int_list.declare(args[1],getch());
 			} else if (args[0]=="write" || args[0]=="writeln") {
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
@@ -495,13 +557,17 @@ int runCode(string code) {
 							j++;
 						} 
 						i = j+1;
-						goto fcont;
+						goto fcont; // HERE
 			} else if (args[0]=="ret") {
 				if (args.size() != 2) {
 					__throw(11);
 				}
-				rets = getIntval(args[1]); 
-				goto ret;
+				if (calltrace.empty()) {
+					rets = getIntval(args[1]); 
+					goto ret;
+				} else {
+					
+				}
 			} else if (args[0]=="get") { // Supports variable only
 				if (args.size() != 4 || args[2] != "=") __throw(12);
 				strProcs spc = getSproc(args[3]);
@@ -719,6 +785,7 @@ int runCode(string code) {
 			int tmp = i;
 			i = ijumpto[i];
 			ijumpto.erase(tmp); // see you then
+			varpop();
 			ifdebug printf("Jumping to cause %d\n",i);
 		}
 		else i++; // continuing running next
