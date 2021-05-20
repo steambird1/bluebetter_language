@@ -32,21 +32,21 @@ CompilerSettings=0000000000000000001000000
 UnitCount=4
 
 [VersionInfo]
-Major=3
-Minor=1
-Release=1
-Build=176
+Major=4
+Minor=0
+Release=0
+Build=177
 LanguageID=1033
 CharsetID=1252
 CompanyName=
-FileVersion=3.1.1.176
+FileVersion=4.0.0.177
 FileDescription=Developed using the Dev-C++ IDE
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=BlueBetter Interpreter
-ProductVersion=3.1.1.176
+ProductVersion=4.0.0.177
 AutoIncBuildNr=1
 SyncProduct=1
 
