@@ -416,7 +416,10 @@ int runCode(string code) {
 				// It's declarings
 				// write RET code first
 				if (args.size() < 4 || args[2] != "=") __throw(21);
-				pair<string,string> ga = getArrayz(args[3]);
+				string attw = "";
+				for (int i = 3; i < args.size()-1; i++) attw = attw + args[i] + " ";
+				attw = attw + args[args.size()-1];
+				pair<string,string> ga = getArrayz(attw);
 				debugs("Calling function: %s (%s)\n",ga.first.c_str(),ga.second.c_str());
 				if (!callist.count(ga.first)) __throw(7);
 				if (callist[ga.first].ret_type == '/') __throw(21); // trying to get a sub's return 
