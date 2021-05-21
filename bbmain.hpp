@@ -2,6 +2,7 @@
 #include "bbvar.hpp" 
 #include <string>
 #include <map>
+#include <set>
 #include <stack>
 #include <vector>
 #include <cstdio>
@@ -202,6 +203,8 @@ char nameToType(string at, bool arrayw) {
 #define varpop() do { int_list.pop(); str_list.pop(); debugs("Poping all (cur = %d,%d)\n",int_list.length(),str_list.length()); } while (false)
 #define varfree() do { int_list.free(); str_list.free(); debugs("Freeing all (cur = %d,%d)\n",int_list.length(),str_list.length()); } while (false)
 
+#define set_swtc(set_name,val) do { if (set_name.count(val)) {set_name.erase(val);} else {set_name.insert(val);} } while (false)
+
 int __runCode(string code, bool debugger, bool pipe) {
 	map<string,_call> callist;
 	_varlist<int> int_list;
@@ -210,7 +213,97 @@ int __runCode(string code, bool debugger, bool pipe) {
 	vector<string> lines = spiltLines(code);
 	stack<int> calltrace;
 	_ret getting; // Getting value type
+	set<string> watch;// Watchpoint (debugger)
+	set<int> breakp;//Breakpoint (debugger)
+	set<pair<int,string> > breakc; // Conditional breakpoint (debugger) 
 	int i = 0,rets = 0; // executor pointing
+	char debug_cmd[2048];
+	bool flag = true;
+	if (debugger) {
+		int bp,pt,t,t1,t2;
+		pair<int,string> mp;
+		// Pre-running command
+		do {
+			if (pipe) {
+				// Pipe command
+			} else gets(debug_cmd);
+			vector<string> dcmd = split_arg(string(debug_cmd),true,' ');
+			switch (dcmd[0][0]) {
+				case 'r':
+					flag = false;
+					break;
+				case 'n': case 'c': case 'j': case 's':
+					printf("Error: program not running\n");
+					break;
+				case 'b':
+					if (dcmd.size() != 2) {
+						printf("Error: value not given\n");
+						break;
+					}
+					bp = atoi(dcmd[1].c_str());
+					set_swtc(breakp,bp);
+					break;
+				case 'd':
+					if (dcmd.size() != 3) {
+						printf("Error: value not given\n");
+						break;
+					}
+					bp = atoi(dcmd[1].c_str());
+					mp = make_pair(bp,dcmd[2]);
+					set_swtc(breakc,mp);
+					break;
+				case 'l':
+					for (auto i = breakp.begin(); i != breakp.end(); i++) {
+						printf("Normal	%d\n",(*i));
+					}
+					for (auto i = breakc.begin(); i != breakc.end(); i++) {
+						printf("Normal	%d	%s\n",i->first,i->second.c_str());
+					}
+					break;
+				case 'w':
+					if (dcmd.size() != 2) {
+						printf("Error: value not given\n");
+						break;
+					}
+					//watch.push_back(dcmd[1]);
+					set_swtc(watch,dcmd[1]);
+					break;
+				case 't':
+					for (auto i = watch.begin(); i != watch.end(); i++) {
+						printf("Watch	%s\n",i->c_str());
+					}
+					break;
+				case 'v':
+					switch (dcmd.size()) {
+						case 1:
+							// all
+							pt = 0;
+							for (auto i = lines.begin(); i != lines.end(); i++) {
+								printf("%3d %s\n",++pt,i->c_str()); 
+							}
+							break;
+						case 2:
+							t = atoi(dcmd[1].c_str());
+							if (t < 1 || t > lines.size()) {
+								printf("Error: line out of range\n");
+								break;
+							}
+							printf("%s\n",lines[t-1].c_str());
+							// single
+							break;
+						case 3:
+							// selected
+							t1 = atoi(dcmd[1].c_str()), t2 = atoi(dcmd[2].c_str());
+							if (t1 < 1 || t1 > lines.size() || t2 < 1 || t2 > lines.size()) {
+								printf("Error: line out of range\n");
+								break;
+							}
+							for (int i = t1 - 1; i < t2; i++) printf("%3d %s\n",i+1,lines[i].c_str());
+							break;
+					}
+			}
+		} while (flag);
+	}
 	while (i < lines.size()) {
 		debugs("Executing: %s\n",lines[i].c_str());
 		vector<string> args = split_arg(lines[i],true,' ');
@@ -853,9 +946,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 			ifdebug printf("Jumping to cause %d\n",i);
 		}
 		else i++; // continuing running next
-		fcont: if (debugger) {
-			
-		} 
+		fcont:
 		if (STEP_BY_STEP) system("pause");// force continuing running next 
 	}
 	ret: ;
