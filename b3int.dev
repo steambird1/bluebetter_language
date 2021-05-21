@@ -35,18 +35,30 @@ UnitCount=4
 Major=4
 Minor=1
 Release=0
+<<<<<<< HEAD
 Build=208
 LanguageID=1033
 CharsetID=1252
 CompanyName=
 FileVersion=4.1.0.208
+=======
+Build=179
+LanguageID=1033
+CharsetID=1252
+CompanyName=
+FileVersion=4.0.0.179
+>>>>>>> main
 FileDescription=Developed using the Dev-C++ IDE
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=BlueBetter Interpreter
+<<<<<<< HEAD
 ProductVersion=4.1.0.208
+=======
+ProductVersion=4.0.0.179
+>>>>>>> main
 AutoIncBuildNr=1
 SyncProduct=1
 

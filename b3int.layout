@@ -1,7 +1,13 @@
 [Editor_0]
+<<<<<<< HEAD
 CursorCol=22
 CursorRow=958
 TopLine=940
+=======
+CursorCol=40
+CursorRow=202
+TopLine=185
+>>>>>>> main
 LeftChar=1
 [Editors]
 Order=1,0,2,3
@@ -9,7 +15,7 @@ Focused=0
 [Editor_1]
 CursorCol=18
 CursorRow=33
-TopLine=14
+TopLine=4
 LeftChar=1
 [Editor_2]
 CursorCol=1
