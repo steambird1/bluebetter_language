@@ -16,6 +16,8 @@ using namespace std;
 #define BLUEBETTER_VER "v202106"
 // It's really different, so we do this
 
+// Preparing REAL NUMBER. 
+
 #define DEBUG_MODE false
 #define STEP_BY_STEP false
 #define PRINT_ERROR_INFO true

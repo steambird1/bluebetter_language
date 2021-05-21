@@ -137,7 +137,7 @@ int __getIntval(string exp,_varlist<int> int_list) {
 	if (isdigit(exp[0])) {
 		return atoi(exp.c_str());
 	} else if (exp[0]=='"') {
-		return 0;
+		return atoi(exp.substr(1,exp.length()-2).c_str());
 	} else if (isContain(exp,"(")) {// or ")"
 		pair<string,string> a = getArrayz(exp);
 		string buf1 = a.first,buf2 = a.second;
@@ -161,7 +161,7 @@ string __getStrval(string exp,_varlist<int> int_list,_varlist<string> str_list) 
 		pair<string,string> a = getArrayz(exp);
 		string buf1 = a.first,buf2 = a.second;
 		int z = __getIntval(string(buf2),int_list);
-		if (int_list.countall(buf1)&1) {
+		if (str_list.countall(buf1)&1) {
 			if (z < 0 || z >= str_list.array_size(buf1)) return 0;
 			return str_list.array_get(buf1,z);
 		} else return 0;
@@ -172,7 +172,28 @@ string __getStrval(string exp,_varlist<int> int_list,_varlist<string> str_list) 
 	}
 }
 
+double __getRealval(string exp,_varlist<int> int_list,_varlist<double> real_list) {
+	if (isdigit(exp[0])) {
+		return atof(exp.c_str()); // automaticly stringz
+	} else if (exp[0]=='"') {
+		return atof(exp.substr(1,exp.length()-2).c_str());
+	} else if (isContain(exp,"(")) {// or ")"
+		pair<string,string> a = getArrayz(exp);
+		string buf1 = a.first,buf2 = a.second;
+		int z = __getIntval(string(buf2),int_list);
+		if (real_list.countall(buf1)&1) {
+			if (z < 0 || z >= real_list.array_size(buf1)) return 0;
+			return real_list.array_get(buf1,z);
+		} else return 0.00;
+	} else {
+		if (real_list.countall(exp)&2) return real_list.get(exp);
+		else if (int_list.countall(exp)&2) return double(int_list.get(exp));
+		else return 0.00;
+	}
+}
+
 #define getIntval(exp) __getIntval(exp,int_list)
 #define getStrval(exp) __getStrval(exp,int_list,str_list) 
+#define getRealval(exp) __getRealval(exp,int_list,real_list)
 
 #endif
