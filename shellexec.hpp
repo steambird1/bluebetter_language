@@ -61,6 +61,34 @@ vector<string> split_arg(string cmd,bool allow_quotes,char splitor) {
 	if (buf!="") argv.push_back(buf);
 	return argv;
 }
+
+vector<string> split_argw(string cmd,bool allow_quotes,char splitor) {
+	vector<string> argv;
+	// argc = argv.size()
+	bool inquote = false;
+	string buf = "";
+	for (int i = 0; i < cmd.length(); i++) {
+		if (cmd[i]==splitor) {
+			if (inquote) {
+					buf = buf + splitor;
+				} else {
+					argv.push_back(buf);
+					buf = "";
+				}
+		} else if (cmd[i]=='"') {
+			if (allow_quotes) {
+				inquote = !inquote;
+			}
+			else buf = buf + '"';
+//			here is the difference
+		} else {
+			buf = buf + cmd[i];
+		}
+	}
+	if (buf!="") argv.push_back(buf);
+	return argv;
+}
+
 string pwd_input(void) {
 	int k;
 		string s = "";

@@ -8,8 +8,13 @@
 // TO CHANGE VERSION INFORMATION, EDIT PROJECT OPTIONS...
 //
 1 VERSIONINFO
+<<<<<<< HEAD
+FILEVERSION 4,1,0,208
+PRODUCTVERSION 4,1,0,208
+=======
 FILEVERSION 4,0,0,179
 PRODUCTVERSION 4,0,0,179
+>>>>>>> main
 FILETYPE VFT_APP
 {
   BLOCK "StringFileInfo"
@@ -17,14 +22,22 @@ FILETYPE VFT_APP
     BLOCK "040904E4"
     {
       VALUE "CompanyName", ""
+<<<<<<< HEAD
+      VALUE "FileVersion", "4.1.0.208"
+=======
       VALUE "FileVersion", "4.0.0.179"
+>>>>>>> main
       VALUE "FileDescription", "Developed using the Dev-C++ IDE"
       VALUE "InternalName", ""
       VALUE "LegalCopyright", ""
       VALUE "LegalTrademarks", ""
       VALUE "OriginalFilename", ""
       VALUE "ProductName", "BlueBetter Interpreter"
+<<<<<<< HEAD
+      VALUE "ProductVersion", "4.1.0.208"
+=======
       VALUE "ProductVersion", "4.0.0.179"
+>>>>>>> main
     }
   }
   BLOCK "VarFileInfo"
