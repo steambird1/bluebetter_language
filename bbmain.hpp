@@ -251,12 +251,16 @@ int __runCode(string code, bool debugger, bool pipe) {
 	char debug_cmd[2048];
 	bool flag = true, breaknext = false;
 	if (debugger) {
-		printf("Welcome to BlueBetter Debugger\n\n");
+		if (!pipe) printf("Welcome to BlueBetter Debugger\n\n");
 		int bp,pt,t,t1,t2;
 		pair<int,string> mp;
 		do {
-			printf(">>> ");
-			gets(debug_cmd);
+			if (pipe) {
+				
+			} else {
+				printf(">>> ");
+				gets(debug_cmd);
+			}
 			vector<string> dcmd = split_argw(string(debug_cmd),true,' ');
 			switch (dcmd[0][0]) {
 				case 'n': case 'c': case 'j': case 's':

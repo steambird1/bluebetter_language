@@ -3,13 +3,43 @@
 #include <map>
 #include <cstdlib>
 #include <iostream>
+#include <cstdio>
 #include <conio.h>
+#include <windows.h>
 using namespace std;
 
 #ifndef _SHELLEXEC_
 #define _SHELLEXEC_
 
 // From seabird_shell.
+
+bool isFileExist(string fn) {
+	const char *file_name = fn.c_str();
+	bool flag = false;
+	WIN32_FIND_DATA wfd;
+	HANDLE hFind = FindFirstFile(file_name, &wfd);
+	if ( INVALID_HANDLE_VALUE != hFind )   flag = true;
+	else                                   flag = false;
+	CloseHandle(hFind);
+	return flag;
+	/*
+Link£ºhttps://blog.csdn.net/guowenyan001/article/details/17259173
+Modified by steambird1 2021-4-30
+*/
+}
+
+string waitForFile(string filename) {
+	string buf;
+	while (!isFileExist(filename));
+	FILE *f;
+	f = fopen(filename.c_str(),"r");
+	while (!feof(f)) {
+		buf += fgetc(f);
+	}
+	buf=buf.substr(0,buf.length()-1); // removing something not good
+	fclose(f);
+	return buf;
+}
 
 int to_int(const char *s) {
 	string w = s;
