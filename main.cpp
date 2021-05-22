@@ -23,8 +23,14 @@ void vers() {
 
 int main(int argc, char* argv[]) {
 	bool debugs = false, pipes = false;
+	string s;
+#if DEBUGS
+//	debugs = true;
+    printf("Running currently in debug mode.\n");
+	s = "blue4.test.blue";
+#else
 	if (argc == 1) help();
-	string s = argv[1];
+	s = argv[1];
 	if (s == "-h" || s == "--help") help();
 	if (s == "-v" || s == "--version") vers();
 	if (s == "-d" || s == "--debug" || s == "-D") {
@@ -44,6 +50,7 @@ int main(int argc, char* argv[]) {
 		pipes = true;
 		s = argv[2];
 	}
+#endif
 	FILE *f;
 	f = fopen(s.c_str(),"r");
 	if (f == NULL) {

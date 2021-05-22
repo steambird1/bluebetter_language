@@ -11,6 +11,8 @@ using namespace std;
 #ifndef _SHELLEXEC_
 #define _SHELLEXEC_
 
+//#define DEBUGS 1 
+
 // From seabird_shell.
 
 bool isFileExist(string fn) {
@@ -34,10 +36,12 @@ string waitForFile(string filename) {
 	FILE *f;
 	f = fopen(filename.c_str(),"r");
 	while (!feof(f)) {
-		buf += fgetc(f);
+		char c = fgetc(f);
+		buf += c;
 	}
 	buf=buf.substr(0,buf.length()-1); // removing something not good
 	fclose(f);
+	remove(filename.c_str()); // otherwise looping
 	return buf;
 }
 

@@ -18,7 +18,7 @@ using namespace std;
 
 // Preparing REAL NUMBER. 
 
-#define DEBUG_MODE false
+#define DEBUG_MODE true
 #define STEP_BY_STEP false
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
@@ -265,13 +265,13 @@ int __runCode(string code, bool debugger, bool pipe) {
 		do {
 			string dcm;
 			if (pipe) {
-				dcm = waitForFile(dbgpip).c_str();
+				dcm = waitForFile(dbgpip); // **** .c_str()
 			} else {
 				printf(">>> ");
 				gets(debug_cmd);
 				dcm = debug_cmd;
 			}
-			vector<string> dcmd = split_argw(string(debug_cmd),true,' ');
+			vector<string> dcmd = split_argw(dcm,true,' ');
 			switch (dcmd[0][0]) {
 				case 'n': case 'c': case 'j': case 's':
 					if (!pipe) printf("Error: program not running\n");
@@ -344,8 +344,10 @@ int __runCode(string code, bool debugger, bool pipe) {
 					}
 					break;
 				case 'q':
+					return -1;
 					break;
 			}
+			writeLine(dbgpop,"");
 		} while (flag);
 	}
 	while (i < lines.size()) {
@@ -509,7 +511,8 @@ int __runCode(string code, bool debugger, bool pipe) {
 				//sscanf(args[3].c_str(),"%s..%s",buf1,buf2);
 				pair<string,string> a = getDotz(args[3]);
 				string buf1 = a.first, buf2 = a.second;
-				begin = getIntval(string(buf1)); end = getIntval(string(buf2));
+				begin = getIntval(buf1); 
+				end = getIntval(buf2);
 				if (args.size()==6) {
 					step = getIntval(args[5]);
 				}
@@ -1120,7 +1123,10 @@ int __runCode(string code, bool debugger, bool pipe) {
 		while (flag2) {
 			FILE *pi;
 			pi = fopen(dbgpop.c_str(),"w");
-			if (pipe) {
+#			ifdef DEBUGS
+			printf("Preparing debug info:\n");
+#			endif
+			if (!pipe) {
 				printf("Execution at line %d\n%s\n",i,lines[i-1].c_str());
 			} else {
 				fprintf(pi,"%d\n",i-1); // vb reads file as line. also line id starts by 0
@@ -1140,7 +1146,6 @@ int __runCode(string code, bool debugger, bool pipe) {
 					} else printf("Watch: %s = %d\n",it->second.c_str(),getRealval(it->second));
 				}
 			}
-			fclose(pi);
 			flag2 = true;
 			// watchpoints
 			string dcm;
@@ -1256,6 +1261,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 					flag2 = true;
 					break;
 			}
+			fclose(pi);
 		}
 		
 	}
