@@ -138,10 +138,10 @@ class _varlist {
 };
 
 int __getIntval(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
-	if (isdigit(exp[0])) {
-		return atoi(exp.c_str());
+	if (isdigit(exp[0]) || exp[0] == '+' || exp[0] == '-') {
+		return to_int(exp.c_str());
 	} else if (exp[0]=='"') {
-		return atoi(exp.substr(1,exp.length()-2).c_str());
+		return to_int(exp.substr(1,exp.length()-2).c_str());
 	} else if (isContain(exp,"(")) {// or ")"
 		pair<string,string> a = getArrayz(exp);
 		string buf1 = a.first,buf2 = a.second;
@@ -153,13 +153,13 @@ int __getIntval(string exp,_varlist<int> int_list,_varlist<string> str_list,_var
 	} else {
 		if (int_list.countall(exp)&2) return int_list.get(exp);
 		else if (real_list.countall(exp)&2) return int(real_list.get(exp));
-		else if (str_list.countall(exp)&2) return atoi(str_list.get(exp).c_str());
+		else if (str_list.countall(exp)&2) return to_int(str_list.get(exp).c_str());
 		else return 0;
 	}
 } 
 
 string __getStrval(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
-	if (isdigit(exp[0])) {
+	if (isdigit(exp[0]) || exp[0] == '+' || exp[0] == '-') {
 		return exp; // automaticly stringz
 	} else if (exp[0]=='"') {
 		return exp.substr(1,exp.length()-2);
@@ -180,10 +180,10 @@ string __getStrval(string exp,_varlist<int> int_list,_varlist<string> str_list,_
 }
 
 double __getRealval(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
-	if (isdigit(exp[0])) {
-		return atof(exp.c_str()); // automaticly stringz
+	if (isdigit(exp[0]) || exp[0] == '+' || exp[0] == '-') {
+		return to_double(exp.c_str()); // automaticly stringz
 	} else if (exp[0]=='"') {
-		return atof(exp.substr(1,exp.length()-2).c_str());
+		return to_double(exp.substr(1,exp.length()-2).c_str());
 	} else if (isContain(exp,"(")) {// or ")"
 		pair<string,string> a = getArrayz(exp);
 		string buf1 = a.first,buf2 = a.second;
@@ -195,7 +195,7 @@ double __getRealval(string exp,_varlist<int> int_list,_varlist<string> str_list,
 	} else {
 		if (real_list.countall(exp)&2) return real_list.get(exp);
 		else if (int_list.countall(exp)&2) return double(int_list.get(exp));
-		else if (str_list.countall(exp)&2) return atof(str_list.get(exp).c_str());
+		else if (str_list.countall(exp)&2) return to_double(str_list.get(exp).c_str());
 		else return 0.00;
 	}
 }

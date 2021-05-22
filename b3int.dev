@@ -42,11 +42,11 @@ CharsetID=1252
 CompanyName=
 FileVersion=4.1.0.208
 =======
-Build=227
+Build=232
 LanguageID=1033
 CharsetID=1252
 CompanyName=
-FileVersion=4.1.0.227
+FileVersion=4.1.0.232
 >>>>>>> main
 FileDescription=Developed using the Dev-C++ IDE
 InternalName=
@@ -57,7 +57,7 @@ ProductName=BlueBetter Interpreter
 <<<<<<< HEAD
 ProductVersion=4.1.0.208
 =======
-ProductVersion=4.1.0.227
+ProductVersion=4.1.0.232
 >>>>>>> main
 AutoIncBuildNr=1
 SyncProduct=1

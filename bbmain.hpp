@@ -270,7 +270,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						printf("Error: value not given\n");
 						break;
 					}
-					bp = atoi(dcmd[1].c_str());
+					bp = to_int(dcmd[1].c_str());
 					set_swtc(breakp,bp);
 					break;
 				case 'd':
@@ -278,7 +278,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						printf("Error: value not given\n");
 						break;
 					}
-					bp = atoi(dcmd[1].c_str());
+					bp = to_int(dcmd[1].c_str());
 					mp = make_pair(bp,dcmd[2]);
 					set_swtc(breakc,mp);
 					break;
@@ -312,7 +312,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 							}
 							break;
 						case 2:
-							t = atoi(dcmd[1].c_str());
+							t = to_int(dcmd[1].c_str());
 							if (t < 1 || t > lines.size()) {
 								printf("Error: line out of range\n");
 								break;
@@ -320,7 +320,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 							printf("%s\n",lines[t-1].c_str());
 							break;
 						case 3:
-							t1 = atoi(dcmd[1].c_str()), t2 = atoi(dcmd[2].c_str());
+							t1 = to_int(dcmd[1].c_str()), t2 = to_int(dcmd[2].c_str());
 							if (t1 < 1 || t1 > lines.size() || t2 < 1 || t2 > lines.size()) {
 								printf("Error: line out of range\n");
 								break;
@@ -1131,7 +1131,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						printf("Error: value not given\n");
 						break;
 					}
-					i = atoi(dcmd[1].c_str());
+					i = to_int(dcmd[1].c_str());
 					flag2 = false;
 					break;
 				case 's':
@@ -1155,7 +1155,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						printf("Error: value not given\n");
 						break;
 					}
-					bp = atoi(dcmd[1].c_str());
+					bp = to_int(dcmd[1].c_str());
 					set_swtc(breakp,bp);
 					break;
 				case 'd':
@@ -1163,7 +1163,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						printf("Error: value not given\n");
 						break;
 					}
-					bp = atoi(dcmd[1].c_str());
+					bp = to_int(dcmd[1].c_str());
 					mp = make_pair(bp,dcmd[2]);
 					set_swtc(breakc,mp);
 					break;
@@ -1197,7 +1197,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 							}
 							break;
 						case 2:
-							t = atoi(dcmd[1].c_str());
+							t = to_int(dcmd[1].c_str());
 							if (t < 1 || t > lines.size()) {
 								printf("Error: line out of range\n");
 								break;
@@ -1205,7 +1205,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 							printf("%s\n",lines[t-1].c_str());
 							break;
 						case 3:
-							t1 = atoi(dcmd[1].c_str()), t2 = atoi(dcmd[2].c_str());
+							t1 = to_int(dcmd[1].c_str()), t2 = to_int(dcmd[2].c_str());
 							if (t1 < 1 || t1 > lines.size() || t2 < 1 || t2 > lines.size()) {
 								printf("Error: line out of range\n");
 								break;
