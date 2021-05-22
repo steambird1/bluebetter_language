@@ -41,6 +41,13 @@ string waitForFile(string filename) {
 	return buf;
 }
 
+void writeLine(string filename,string data) {
+	FILE *f;
+	f = fopen(filename.c_str(),"w");
+	fprintf(f,"%s\n",data.c_str());
+	fclose(f);
+}
+
 int to_int(const char *s) {
 	string w = s;
 	if (s[0]=='+' || s[0] == '-') w = w.substr(1);

@@ -4,6 +4,13 @@
 #include "bbmain.hpp"
 using namespace std;
 
+/*
+Pipeline options:
+
+-D	Run debugger as pipe
+-R	Run program as pipe
+*/
+
 void help() {
 	printf("Usage: blue (-h | -v | file)\n\n-h\n--help      Show this help message and quit.\n-v\n--version   Show version message and quit.\n-d\n--debug     Run program with debugger.\n\nRun blue with filename will run bluebetter program.\n");
 	exit(0);
