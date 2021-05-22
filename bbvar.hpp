@@ -126,9 +126,6 @@ class _varlist {
 		int array_length(void) {
 			return arrinfo.size();
 		}
-		~_varlist() {
-			this->free();
-		}
 		friend int __getIntval(string,_varlist<int>);
 		friend string __getStrval(string,_varlist<int>,_varlist<string>);
 	private:
