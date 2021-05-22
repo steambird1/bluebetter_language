@@ -22,17 +22,26 @@ void vers() {
 }
 
 int main(int argc, char* argv[]) {
-	bool debugs = false;
+	bool debugs = false, pipes = false;
 	if (argc == 1) help();
 	string s = argv[1];
 	if (s == "-h" || s == "--help") help();
 	if (s == "-v" || s == "--version") vers();
-	if (s == "-d" || s == "--debug") {
+	if (s == "-d" || s == "--debug" || s == "-D") {
 		if (argc < 3) {
 			printf("Error: cannot read file\n");
 			return 1;
 		}
 		debugs = true;
+		if (s == "-D") pipes = true;
+		s = argv[2];
+	}
+	if (s == "-R") {
+		if (argc < 3) {
+			printf("Error: cannot read file\n");
+			return 1;
+		}
+		pipes = true;
 		s = argv[2];
 	}
 	FILE *f;
@@ -47,5 +56,5 @@ int main(int argc, char* argv[]) {
 	}
 	buf=buf.substr(0,buf.length()-1); // removing something not good
 	fclose(f);
-	return __runCode(buf,debugs,false); //runCode(buf);
+	return __runCode(buf,debugs,pipes); //runCode(buf);
 }
