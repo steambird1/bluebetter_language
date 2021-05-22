@@ -52,7 +52,7 @@ pair<string,string> getDotz(string exp) {
 	return make_pair(p[0],p[1]);
 }
 
-strProcs __getSproc(string exp,_varlist<int> int_list) {
+strProcs __getSproc(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
 	pair<string,string> s = getArrayz(exp);
 	string p[2]={"",""};
 	if (isContain(s.second,":")) {
@@ -64,42 +64,52 @@ strProcs __getSproc(string exp,_varlist<int> int_list) {
 				p[int(mode)]+=s.second[i];
 			}
 		}
-		return __makeStrprocs(s.first,__getIntval(p[0],int_list),__getIntval(p[1],int_list));
+		return __makeStrprocs(s.first,__getIntval(p[0],int_list,str_list,real_list),__getIntval(p[1],int_list,str_list,real_list));
 	} else {
-		int at = __getIntval(s.second,int_list);
+		int at = __getIntval(s.second,int_list,str_list,real_list);
 		return __makeStrprocs(s.first,at,at);
 	}
 }
 
-#define getSproc(exp) __getSproc(exp,int_list)
+#define getSproc(exp) __getSproc(exp,int_list,str_list,real_list)
 
 
-char __getVartype(string exp,_varlist<int> int_list,_varlist<string> str_list) {
+char __getVartype(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
 	if (isContain(exp,"(")) {
 		pair<string,string> a = getArrayz(exp);
 		if (int_list.countall(a.first)&1) return 'I';
 		if (str_list.countall(a.first)&1) return 'S';
+		if (real_list.countall(a.first)&1) return 'R';
 		return '?';
 	} else {
 		if (int_list.countall(exp)&2) return 'i';
 		if (str_list.countall(exp)&2) return 's';
+		if (real_list.countall(exp)&2) return 'r';
 		return '?';
 	}
 }
-#define getVartype(exp) __getVartype(exp,int_list,str_list)
+#define getVartype(exp) __getVartype(exp,int_list,str_list,real_list)
 
-#define __op_comp_int(op) curr = (__getIntval(args[i],int_list) op __getIntval(args[i+2],int_list))
-#define __op_comp_str(op) curr = (__getStrval(args[i],int_list,str_list) op __getStrval(args[i+2],int_list,str_list)) 
+#define __op_comp_int(op) curr = (__getIntval(args[i],int_list,str_list,real_list) op __getIntval(args[i+2],int_list,str_list,real_list))
+#define __op_comp_real(op) curr = (__getRealval(args[i],int_list,str_list,real_list) op __getRealval(args[i+2],int_list,str_list,real_list))
+#define __op_comp_str(op) curr = (__getStrval(args[i],int_list,str_list,real_list) op __getStrval(args[i+2],int_list,str_list,real_list)) 
 
 #define __op_proceed_int(op) int_list.declare(iprocd[0],getIntval(iprocd[2]) op getIntval(iprocd[4]))
+#define __op_proceed_real(op) real_list.declare(iprocd[0],getRealval(iprocd[2]) op getRealval(iprocd[4]))
 #define __op_proceeds_int(op) int_list.set(args[0],getIntval(args[2]) op getIntval(args[4]))
+#define __op_proceeds_real(op) real_list.set(args[0],getRealval(args[2]) op getRealval(args[4]))
 #define __op_proceeds_str(op) str_list.set(args[0],getStrval(args[2]) op getStrval(args[4]))
 // str_var[args[0]] = getStrval(args[2]) op getStrval(args[4])
 #define __op_proceeda_int(op) int_list.array_set(ps.first,dnid,getIntval(args[2]) op getIntval(args[4]))
+#define __op_proceeda_real(op) real_list.array_set(ps.first,dnid,getRealval(args[2]) op getRealval(args[4]))
 //int_arr[ps.first].first[dnid] = getIntval(args[2]) op getIntval(args[4])
-#define __op_proceeda_str(op) str_arr[ps.first].first[dnid] = getStrval(args[2]) op getStrval(args[4])
+#define __op_proceeda_str(op) str_list.array_set(ps.first,dnid,getStrval(args[2]) op getStrval(args[4])) 
+// str_arr[ps.first].first[dnid] = getStrval(args[2]) op getStrval(args[4])
 #define __op_singoc_int(op) do { \
 	int t = int_list.get(args[0]); int_list.set(args[0],t op getIntval(args[2])); \
+} while (false)
+#define __op_singoc_real(op) do { \
+	double t = real_list.get(args[0]); real_list.set(args[0],t op getRealval(args[2])); \
 } while (false)
 #define __op_singoc_str(op) do { \
 	string t = str_list.get(args[0]); str_list.set(args[0],t op getIntval(args[2])); \
@@ -110,16 +120,19 @@ char __getVartype(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 } while (false)
 // int_var[args[0]] = (op getIntval(args[2]))
 #define __op_singoa_int(op) do { \
-	int t = int_list.array_get(ps.first,dnid); int_list.array_set(args[0],dnid,t op getIntval(args[2])); \
+	int t = int_list.array_get(ps.first,dnid); int_list.array_set(ps.first,dnid,t op getIntval(args[2])); \
+} while (false)
+#define __op_singoa_real(op) do { \
+	double t = real_list.array_get(ps.first,dnid); real_list.array_set(ps.first,dnid,t op getRealval(args[2])); \
 } while (false)
 // int_list.array_set(args[0],dnid,t op getIntval(args[2]))
 // int_arr[ps.first].first[dnid] op getIntval(args[2])
 #define __op_singoa_str(op) do { \
-	string t = str_list.array_get(ps.first,dnid); str_list.array_set(args[0],dnid,t op getIntval(args[2])); \
+	string t = str_list.array_get(ps.first,dnid); str_list.array_set(ps.first,dnid,t op getIntval(args[2])); \
 } while (false)
 // str_arr[ps.first].first[dnid] op getStrval(args[2])
 #define __op_singra_int(op) do { \
-	int t = int_list.array_get(ps.first,dnid); int_list.array_set(args[0],dnid,(op getIntval(args[2]))); \
+	int t = int_list.array_get(ps.first,dnid); int_list.array_set(ps.first,dnid,(op getIntval(args[2]))); \
 } while (false)
 //int_arr[ps.first].first[dnid] = (op getIntval(args[2]))
 
@@ -133,12 +146,12 @@ char __getVartype(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 						} \
 						i = j+1; goto fcont; } while (false)
 
-bool __getCond(string exp,_varlist<int> int_list,_varlist<string> str_list) {
+bool __getCond(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
 	vector<string> args = split_arg(exp,true,' ');
 	bool stat; 
 	for (int i = 0; i < args.size(); i+=4) { // a op b op
 		bool curr;
-		char g0 = __getVartype(args[0],int_list,str_list);
+		char g0 = __getVartype(args[0],int_list,str_list,real_list);
 		switch (g0) {
 			case 'i': case 'I':
 				if (args[i+1]=="==") {
@@ -153,6 +166,21 @@ bool __getCond(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 			__op_comp_int(<);
 		} else if (args[i+1]=="<=") {
 			__op_comp_int(<=);
+		}  else return false;
+				break;
+			case 'r': case 'R':
+				if (args[i+1]=="==") {
+			__op_comp_real(==);
+		} else if (args[i+1]=="!=") {
+			__op_comp_real(!=);
+		} else if (args[i+1]==">") {
+			__op_comp_real(>);
+		} else if (args[i+1]==">=") {
+			__op_comp_real(>=);
+		} else if (args[i+1]=="<") {
+			__op_comp_real(<);
+		} else if (args[i+1]=="<=") {
+			__op_comp_real(<=);
 		}  else return false;
 				break;
 			case 's': case 'S':
@@ -180,7 +208,7 @@ bool __getCond(string exp,_varlist<int> int_list,_varlist<string> str_list) {
 	return stat;
 }
 
-#define getCond(exp) __getCond(exp,int_list,str_list)
+#define getCond(exp) __getCond(exp,int_list,str_list,real_list)
 
 struct _call {
 	int callist;
@@ -211,6 +239,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 	map<string,_call> callist;
 	_varlist<int> int_list;
 	_varlist<string> str_list; 
+	_varlist<double> real_list;
 	map<int,int> ijumpto; // after you execute ..., you should jump to ...
 	vector<string> lines = spiltLines(code);
 	stack<int> calltrace;
@@ -352,6 +381,34 @@ int __runCode(string code, bool debugger, bool pipe) {
 						__throw(2);
 					}
 				}
+			} else if (args[0] == "real") {
+				vector<string> ivars = split_arg(attl,true,',');
+				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
+					vector<string> iprocd = split_arg(*it,true,' ');
+					if (int_list.count(iprocd[0])) __throw(1); 
+					if (iprocd.size() == 3) {
+						// a = (can only be) b
+						if (iprocd[1] != "=") __throw(1);
+						real_list.declare(iprocd[0],getRealval(iprocd[2]));
+					} else if (iprocd.size() == 5) {
+						// a = (can only be) b op c
+						if (iprocd[1] != "=") __throw(1);
+						// what about "op"?
+						if (iprocd[3] == "+") {
+							__op_proceed_real(+);
+						} else if (iprocd[3] == "-") {
+							__op_proceed_real(-);
+						} else if (iprocd[3] == "*") {
+							__op_proceed_real(*);
+						} else if (iprocd[3] == "/") {
+							__op_proceed_real(/);
+						} else { // double does not support bit and mod operation.
+							__throw(3);
+						}
+					} else {
+						__throw(2);
+					}
+				}
 			} else if (args[0]=="str") {
 				vector<string> ivars = split_arg(attl,true,',');
 				for (vector<string>::iterator it = ivars.begin(); it != ivars.end(); it++) {
@@ -393,6 +450,9 @@ int __runCode(string code, bool debugger, bool pipe) {
 						} else if (iprocd[0]=="str") {
 							//str_arr[string(buf1)] = make_pair(new string[len],len);
 							if (!str_list.array_declare(string(buf1),len)) __throw(4);
+						} else if (iprocd[0]=="real") {
+							if (!real_list.array_declare(string(buf1),len)) __throw(4);
+							debugs("Countor: %d\n",real_list.count(string(buf1)));
 						} else {
 							__throw(5);
 						}
@@ -458,7 +518,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 					if (is == end) { // REMEMBER THIS OPERATOR!
 						stop_for: int_list.pop(); // ending
 						//str_list.pop();
-						varpop();
+						//varpop();
 						skipLines("for");
 						 // MUST JUMP TO NEXT!!!!!
 					} else varpush();
@@ -485,7 +545,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 				getting = {'?',""}; // not looking for returns
 				//varpush();
 				i = callist[ga.first].callist;
-			} else if (args[0]=="function") {//CURRENTLY HERE
+			} else if (args[0]=="function") {
 				//...
 				if (args.size() < 1) __throw(22);
 				string attl2 = attl.substr(args[1].length()+1);
@@ -525,12 +585,13 @@ int __runCode(string code, bool debugger, bool pipe) {
 				for (int i = 0; i < ivars.size(); i++) {
 					switch (callist[ga.first].call_var[i].first) {
 						case 'i':
-							debugs("Preparing declaring values...\n");
-							debugs("Declaring integer %s = %d\n",callist[ga.first].call_var[i].second.c_str(),getIntval(ivars[i]));
 							int_list.declare(callist[ga.first].call_var[i].second,getIntval(ivars[i]));
 							break;
 						case 's':
 							str_list.declare(callist[ga.first].call_var[i].second,getStrval(ivars[i]));
+							break;
+						case 'r':
+							real_list.declare(callist[ga.first].call_var[i].second,getRealval(ivars[i]));
 							break;
 					}
 				}
@@ -614,6 +675,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 					ifdebug printf(" Inputting %s: ",it->c_str());
 					if (iprocd.size() == 2) {
 						int readi;
+						double readr;
 						if (iprocd[0]=="int") {
 							scanf("%d",&readi);
 							//int_var[iprocd[1]]=readi;
@@ -627,6 +689,9 @@ int __runCode(string code, bool debugger, bool pipe) {
 							scanf("%s",buf);
 							//str_var[iprocd[1]]=string(buf);
 							str_list.declare(iprocd[1],string(buf));
+						} else if (iprocd[0]=="real") {
+							scanf("%lf",&readr);
+							real_list.declare(iprocd[1],readr);
 						} else __throw(10);
 					} else __throw(10);
 				}
@@ -654,6 +719,8 @@ int __runCode(string code, bool debugger, bool pipe) {
 							printf("%c",getIntval(iprocd[1]));
 						} else if (iprocd[0]=="str") {
 							printf("%s",(getStrval(iprocd[1])).c_str());
+						} else if (iprocd[0]=="real") {
+							printf("%lf",getRealval(iprocd[1]));
 						} else {
 							__throw(10);
 						}
@@ -698,6 +765,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 				} else {
 					int si;
 					string ss;
+					double sr;
 					switch (getting.ret_type) {
 						case 'i':
 							si = getIntval(args[1]);
@@ -709,6 +777,10 @@ int __runCode(string code, bool debugger, bool pipe) {
 							varpop();
 							str_list.declare(getting.var_name,ss);
 							break;
+						case 'r':
+							sr = getRealval(args[1]);
+							varpop();
+							real_list.declare(getting.var_name,sr);
 						default:
 							// do nothing yet
 							varpop();
@@ -792,12 +864,13 @@ int __runCode(string code, bool debugger, bool pipe) {
 				int dnid;
 				pair<string,string> ps;
 				if (args.size() < 3) __throw(1);
+				//debugs("Existw: %d\n",real_list.arrinfo.front().size());
 				switch (getVartype(args[0])) {
 					case 'i':
 						if (args.size() == 3) {
 					// a op b (including =! =~)
 					if (args[1] == "=") {
-						__op_singoc_int(=);
+						int t = int_list.get(args[0]); int_list.set(args[0],getIntval(args[2]));
 					} else if (args[1] == "+=") {
 						__op_singoc_int(+=);
 					} else if (args[1] == "-=") {
@@ -853,7 +926,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						if (args.size() == 3) {
 					// a op b (including =! =~)
 					if (args[1] == "=") {
-						__op_singoa_int(=);
+						int_list.array_set(ps.first,dnid,getIntval(args[2]));
 					//	int_arr = getIntval(args[2]); // debug replacement
 					} else if (args[1] == "+=") {
 						__op_singoa_int(+=);
@@ -907,7 +980,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 					case 's':
 						if (args.size() == 3) {
 							if (args[1] == "=") {
-								__op_singoc_str(=);
+								str_list.set(args[0],getStrval(args[2]));
 							} else if (args[1] == "+=") {
 								__op_singoc_str(+=);
 							} else __throw(3);
@@ -922,7 +995,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						dnid = getIntval(ps.second);
 						if (args.size() == 3) {
 							if (args[1] == "=") {
-								__op_singoa_str(=);
+								str_list.array_set(args[0],dnid,getStrval(args[2]));
 							} else if (args[1] == "+=") {
 								__op_singoa_str(+=);
 							} else __throw(3);
@@ -931,6 +1004,73 @@ int __runCode(string code, bool debugger, bool pipe) {
 								__op_proceeds_str(+);
 							} else __throw(3);
 						} else __throw(3);
+						break;
+					case 'r':
+						if (args.size() == 3) {
+					// a op b (including =! =~)
+					if (args[1] == "=") {
+						real_list.set(args[0],getRealval(args[2]));
+					} else if (args[1] == "+=") {
+						__op_singoc_real(+=);
+					} else if (args[1] == "-=") {
+						__op_singoc_real(-=);
+					} else if (args[1] == "*=") {
+						__op_singoc_real(*=);
+					} else if (args[1] == "/=") {
+						__op_singoc_real(/=);
+					} else __throw(3);
+				} else if (args.size() == 5) {
+					// a = b op c
+					if (args[1] != "=") __throw(1);
+					if (args[3] == "+") {
+							__op_proceeds_real(+);
+						} else if (args[3] == "-") {
+							__op_proceeds_real(-);
+						} else if (args[3] == "*") {
+							__op_proceeds_real(*);
+						} else if (args[3] == "/") {
+							__op_proceeds_real(/);
+						} else {
+							__throw(3);
+						}
+				} else __throw(3);
+						break;
+					case 'R':
+						ps = getArrayz(args[0]);
+						dnid = getIntval(ps.second);
+						debugs("Setting %s(%d)\n",ps.first.c_str(),dnid);
+						if (args.size() == 3) {
+					// a op b (including =! =~)
+					if (args[1] == "=") {
+						double rv = getRealval(args[2]);
+						debugs("previous = %lf\n",rv);
+						int stat = real_list.array_set(ps.first,dnid,rv);
+						debugs("state = %d\n",stat);
+					//	int_arr = getIntval(args[2]); // debug replacement
+					} else if (args[1] == "+=") {
+						__op_singoa_real(+=);
+					} else if (args[1] == "-=") {
+						__op_singoa_real(-=);
+					} else if (args[1] == "*=") {
+						__op_singoa_real(*=);
+					} else if (args[1] == "/=") {
+						__op_singoa_real(/=);
+					} else __throw(3);
+				} else if (args.size() == 5) {
+					// a = b op c
+					if (args[1] != "=") __throw(1);
+					if (args[3] == "+") {
+							__op_proceeda_real(+);
+						} else if (args[3] == "-") {
+							__op_proceeda_real(-);
+						} else if (args[3] == "*") {
+							__op_proceeda_real(*);
+						} else if (args[3] == "/") {
+							__op_proceeda_real(/);
+						} else {
+							__throw(3);
+						}
+				} else __throw(3);
 						break;
 					default:
 						__throw(12);
@@ -964,7 +1104,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 		}
 		bool flag2 = breaknext;
 		while (flag2) {
-			printf("Execution at line %d\n%s\n",i,lines[i].c_str());
+			printf("Execution at line %d\n%s\n",i,lines[i-1].c_str());
 			for (auto it = watch.begin(); it != watch.end(); it++) {
 				if (it->first == "int") {
 					printf("Watch: %s = %d\n",it->second.c_str(),getIntval(it->second));
