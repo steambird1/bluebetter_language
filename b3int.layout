@@ -1,8 +1,8 @@
 [Editor_0]
 <<<<<<< HEAD
-CursorCol=6
-CursorRow=370
-TopLine=367
+CursorCol=3
+CursorRow=1241
+TopLine=1220
 =======
 CursorCol=40
 CursorRow=202
@@ -13,17 +13,17 @@ LeftChar=1
 Order=1,0,2,3
 Focused=0
 [Editor_1]
-CursorCol=21
-CursorRow=5
-TopLine=1
+CursorCol=18
+CursorRow=37
+TopLine=13
 LeftChar=1
 [Editor_2]
-CursorCol=30
-CursorRow=18
-TopLine=19
+CursorCol=10
+CursorRow=36
+TopLine=22
 LeftChar=1
 [Editor_3]
-CursorCol=43
-CursorRow=142
+CursorCol=13
+CursorRow=152
 TopLine=132
 LeftChar=1
