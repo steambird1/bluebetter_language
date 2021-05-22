@@ -56,6 +56,7 @@ class _varlist {
 		bool array_declare(string varName, int size) {
 			if (this->count(varName)) return false;
 			arrinfo.back()[varName]=make_pair(new _varType[size],size);
+			return true;
 		}
 		bool set(string varName, _varType value) {
 			for (auto i = varinfo.end()-1; i != varinfo.begin()-1; i--) {
@@ -74,15 +75,17 @@ class _varlist {
 			}
 			return -1;
 		}
-		bool array_set(string varName, int pos, _varType value) {
+		int array_set(string varName, int pos, _varType value) {
+			int is = 0;
 			for (auto i = arrinfo.end()-1; i != arrinfo.begin()-1; i--) {
 				if (i->count(varName)) {
-					if (pos > (*i)[varName].second) return false;
+					if (pos > (*i)[varName].second) return 0; // false
 					(*i)[varName].first[pos] = value;
-					return true;
+					return 1; // true
 				}
+				is++;
 			}
-			return false;
+			return 0-is; // false
 		}
 		// If variable does not exist, return value undefined.
 		_varType get(string varName) {
@@ -129,50 +132,76 @@ class _varlist {
 		friend int __getIntval(string,_varlist<int>);
 		friend string __getStrval(string,_varlist<int>,_varlist<string>);
 	private:
+////    For debugging, put them public tempatorily
 		vector<map<string,_varType> > varinfo;
 		vector<map<string,pair<_varType*,int> > > arrinfo;
 };
 
-int __getIntval(string exp,_varlist<int> int_list) {
-	if (isdigit(exp[0])) {
-		return atoi(exp.c_str());
+int __getIntval(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
+	if (isdigit(exp[0]) || exp[0] == '+' || exp[0] == '-') {
+		return to_int(exp.c_str());
 	} else if (exp[0]=='"') {
-		return 0;
+		return to_int(exp.substr(1,exp.length()-2).c_str());
 	} else if (isContain(exp,"(")) {// or ")"
 		pair<string,string> a = getArrayz(exp);
 		string buf1 = a.first,buf2 = a.second;
-		int z = __getIntval(string(buf2),int_list);
+		int z = __getIntval(string(buf2),int_list,str_list,real_list);
 		if (int_list.countall(buf1)&1) {
 			if (z < 0 || z >= int_list.array_size(buf1)) return 0;
 			return int_list.array_get(buf1,z);
 		} else return 0;
 	} else {
 		if (int_list.countall(exp)&2) return int_list.get(exp);
+		else if (real_list.countall(exp)&2) return int(real_list.get(exp));
+		else if (str_list.countall(exp)&2) return to_int(str_list.get(exp).c_str());
 		else return 0;
 	}
 } 
 
-string __getStrval(string exp,_varlist<int> int_list,_varlist<string> str_list) {
-	if (isdigit(exp[0])) {
+string __getStrval(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
+	if (isdigit(exp[0]) || exp[0] == '+' || exp[0] == '-') {
 		return exp; // automaticly stringz
 	} else if (exp[0]=='"') {
 		return exp.substr(1,exp.length()-2);
 	} else if (isContain(exp,"(")) {// or ")"
 		pair<string,string> a = getArrayz(exp);
 		string buf1 = a.first,buf2 = a.second;
-		int z = __getIntval(string(buf2),int_list);
-		if (int_list.countall(buf1)&1) {
+		int z = __getIntval(string(buf2),int_list,str_list,real_list);
+		if (str_list.countall(buf1)&1) {
 			if (z < 0 || z >= str_list.array_size(buf1)) return 0;
 			return str_list.array_get(buf1,z);
 		} else return 0;
 	} else {
 		if (str_list.countall(exp)&2) return str_list.get(exp);
 		else if (int_list.countall(exp)&2) return to_string(int_list.get(exp));
+		else if (real_list.count(exp)&2) return to_string(real_list.get(exp));
 		else return "";
 	}
 }
 
-#define getIntval(exp) __getIntval(exp,int_list)
-#define getStrval(exp) __getStrval(exp,int_list,str_list) 
+double __getRealval(string exp,_varlist<int> int_list,_varlist<string> str_list,_varlist<double> real_list) {
+	if (isdigit(exp[0]) || exp[0] == '+' || exp[0] == '-') {
+		return to_double(exp.c_str()); // automaticly stringz
+	} else if (exp[0]=='"') {
+		return to_double(exp.substr(1,exp.length()-2).c_str());
+	} else if (isContain(exp,"(")) {// or ")"
+		pair<string,string> a = getArrayz(exp);
+		string buf1 = a.first,buf2 = a.second;
+		int z = __getIntval(string(buf2),int_list,str_list,real_list);
+		if (real_list.countall(buf1)&1) {
+			if (z < 0 || z >= real_list.array_size(buf1)) return 0;
+			return real_list.array_get(buf1,z);
+		} else return 0.00;
+	} else {
+		if (real_list.countall(exp)&2) return real_list.get(exp);
+		else if (int_list.countall(exp)&2) return double(int_list.get(exp));
+		else if (str_list.countall(exp)&2) return to_double(str_list.get(exp).c_str());
+		else return 0.00;
+	}
+}
+
+#define getIntval(exp) __getIntval(exp,int_list,str_list,real_list)
+#define getStrval(exp) __getStrval(exp,int_list,str_list,real_list) 
+#define getRealval(exp) __getRealval(exp,int_list,str_list,real_list)
 
 #endif

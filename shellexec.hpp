@@ -11,6 +11,22 @@ using namespace std;
 
 // From seabird_shell.
 
+int to_int(const char *s) {
+	string w = s;
+	if (s[0]=='+' || s[0] == '-') w = w.substr(1);
+	int t = atoi(w.c_str());
+	if (s[0]=='-') return 0-t;
+	return t;
+} 
+
+double to_double(const char *s) {
+	string w = s;
+	if (s[0]=='+' || s[0] == '-') w = w.substr(1);
+	double d = atof(w.c_str());
+	if (s[0]=='-') return 0.000000-d;
+	return d;
+}
+
 string getl(void) {
 	string cmd = "";
 	char c;
