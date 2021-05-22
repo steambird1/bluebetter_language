@@ -18,8 +18,8 @@ using namespace std;
 
 // Preparing REAL NUMBER. 
 
-#define DEBUG_MODE true
-#define STEP_BY_STEP true
+#define DEBUG_MODE false
+#define STEP_BY_STEP false
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
 
