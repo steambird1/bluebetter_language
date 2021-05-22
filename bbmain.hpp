@@ -13,12 +13,14 @@ using namespace std;
 #ifndef _BLUEBETTER_
 #define _BLUEBETTER_ 1
 
+#define DEBUGA 1
+
 #define BLUEBETTER_VER "v202106"
 // It's really different, so we do this
 
 // Preparing REAL NUMBER. 
 
-#define DEBUG_MODE true
+#define DEBUG_MODE false 
 #define STEP_BY_STEP false
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
@@ -27,9 +29,7 @@ using namespace std;
 #define debugs(...) ifdebug printf(__VA_ARGS__)
 
 // It'll be error if you don't do this!!!
-#define __throw(errid) do { if (PRINT_ERROR_INFO) printf("\nAn error was occured.\n\nError id: %d\n",(errid*1024)+__LINE__); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (pipe) { \
- FILE *f; f = fopen(dbgpop.c_str(),"w"); fprintf(f,"%d\n%d",(errid*1024)+__LINE__,i); fclose(f); \
-}; if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
+#define __throw(errid) do { if (PRINT_ERROR_INFO) printf("\nAn error was occured.\n\nError id: %d\n",(errid*1024)+__LINE__); if (DEBUG_MODE) printf("Error line in interpreter: %d\n\n",__LINE__); if (EXIT_IN_ERROR) return 0-errid; goto cont ;} while (false)
 
 struct strProcs {
 	string bsname;
@@ -241,9 +241,7 @@ inline string getTemp(void) {
 	return string(getenv("temp"));
 }
 
-int __runCode(string code, bool debugger, bool pipe) {
-	const string dbgpip = getTemp() + "\\debugger_pipe.bpip";
-	const string dbgpop = getTemp() + "\\debugger_put.bpip";
+int __runCode(string code, bool debugger) {
 	map<string,_call> callist;
 	_varlist<int> int_list;
 	_varlist<string> str_list; 
@@ -259,29 +257,25 @@ int __runCode(string code, bool debugger, bool pipe) {
 	char debug_cmd[2048];
 	bool flag = true, breaknext = false;
 	if (debugger) {
-		if (!pipe) printf("Welcome to BlueBetter Debugger\n\n");
+		printf("Welcome to BlueBetter Debugger\n\n");
 		int bp,pt,t,t1,t2;
 		pair<int,string> mp;
 		do {
 			string dcm;
-			if (pipe) {
-				dcm = waitForFile(dbgpip); // **** .c_str()
-			} else {
 				printf(">>> ");
 				gets(debug_cmd);
 				dcm = debug_cmd;
-			}
 			vector<string> dcmd = split_argw(dcm,true,' ');
 			switch (dcmd[0][0]) {
 				case 'n': case 'c': case 'j': case 's':
-					if (!pipe) printf("Error: program not running\n");
+					printf("Error: program not running\n");
 					break;
 				case 'r':
 					flag = false;
 					break;
 				case 'b':
 					if (dcmd.size() != 2) {
-						if (!pipe) printf("Error: value not given\n");
+						printf("Error: value not given\n");
 						break;
 					}
 					bp = to_int(dcmd[1].c_str());
@@ -289,7 +283,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 					break;
 				case 'd':
 					if (dcmd.size() != 3) {
-						if (!pipe) printf("Error: value not given\n");
+						 printf("Error: value not given\n");
 						break;
 					}
 					bp = to_int(dcmd[1].c_str());
@@ -298,16 +292,16 @@ int __runCode(string code, bool debugger, bool pipe) {
 					break;
 				case 'l':
 					for (auto i = breakp.begin(); i != breakp.end(); i++) {
-						printf("Normal	%d\n",(*i));
+						printf("Normal			%d\n",(*i));
 					}
 					for (auto i = breakc.begin(); i != breakc.end(); i++) {
-						printf("Normal	%d	%s\n",i->first,i->second.c_str());
+						printf("Conditional		%d	%s\n",i->first,i->second.c_str());
 					}
 					break;
 				case 'w':
 					// watch type value
 					if (dcmd.size() != 3) {
-						if (!pipe) printf("Error: value not given\n");
+						 printf("Error: value not given\n");
 						break;
 					}
 					set_swtc(watch,make_pair(dcmd[1],dcmd[2]));
@@ -347,12 +341,151 @@ int __runCode(string code, bool debugger, bool pipe) {
 					return -1;
 					break;
 			}
-			writeLine(dbgpop,"");
 		} while (flag);
 	}
 	while (i < lines.size()) {
 		debugs("Executing: %s\n",lines[i].c_str());
 		vector<string> args = split_arg(lines[i],true,' ');
+		// is breakpoint?
+		if (breakp.count(i+1)) {
+			breaknext = true;
+		}
+		// is conditional breakpoint?
+		for (auto it = breakc.begin(); it != breakc.end(); it++) {
+			if (it->first == i+1 && getCond(it->second)) {
+				breaknext = true;
+				break;
+			} 
+		}
+		if (debugger) {
+		int bp,pt,t,t1,t2;
+		pair<int,string> mp;
+		bool flag2 = breaknext;
+		while (flag2) {
+				printf("Executed at line %d\n%s\n",i+1,lines[i].c_str());
+			for (auto it = watch.begin(); it != watch.end(); it++) {
+				if (it->first == "int") {
+					printf("Watch: %s = %d\n",it->second.c_str(),getIntval(it->second));
+				} else if (it->first == "str") {
+					printf("Watch: %s = \"%s\"\n",it->second.c_str(),getStrval(it->second).c_str());
+				} else if (it->first == "real") {
+				    printf("Watch: %s = %d\n",it->second.c_str(),getRealval(it->second));
+				}
+			}
+			flag2 = true;
+			// watchpoints
+			string dcm;
+				printf(">>> ");
+				gets(debug_cmd);
+				dcm = debug_cmd;
+			vector<string> dcmd = split_argw(string(debug_cmd),true,' ');
+			switch (dcmd[0][0]) {
+				case 'n':
+					breaknext = true;
+					flag2 = false;
+					break;
+				case 'c':
+					breaknext = false;
+					flag2 = false;
+					break;
+				case 'j':
+					if (dcmd.size() != 2) {
+						 printf("Error: value not given\n");
+						break;
+					}
+					i = to_int(dcmd[1].c_str());
+					flag2 = false;
+					break;
+				case 's':
+					// s type x = v
+					if (dcmd.size() != 5 || dcmd[3] != "=") {
+						 printf("Error: value not given\n");
+						break;
+					}
+					if (dcmd[1] == "int" || dcmd[1]=="char") {
+						int_list.set(dcmd[2],getIntval(dcmd[4]));
+					} else if (dcmd[1] == "str") {
+						str_list.set(dcmd[2],getStrval(dcmd[4]));
+					} else {
+						 printf("Error: type not exist");
+					}
+				case 'r':
+					 printf("Error: program already running");
+					break;
+				case 'b':
+					if (dcmd.size() != 2) {
+						 printf("Error: value not given\n");
+						break;
+					}
+					bp = to_int(dcmd[1].c_str());
+					set_swtc(breakp,bp);
+					break;
+				case 'd':
+					if (dcmd.size() != 3) {
+						 printf("Error: value not given\n");
+						break;
+					}
+					bp = to_int(dcmd[1].c_str());
+					mp = make_pair(bp,dcmd[2]);
+					set_swtc(breakc,mp);
+					break;
+				case 'l':
+					for (auto i = breakp.begin(); i != breakp.end(); i++) {
+						printf("Normal			%d\n",(*i));
+					}
+					for (auto i = breakc.begin(); i != breakc.end(); i++) {
+						printf("Conditional		%d	%s\n",i->first,i->second.c_str());
+					}
+					break;
+				case 'w':
+					// watch type value
+					if (dcmd.size() != 3) {
+						 printf("Error: value not given\n");
+						break;
+					}
+					set_swtc(watch,make_pair(dcmd[1],dcmd[2]));
+					break;
+				case 't':
+					for (auto i = watch.begin(); i != watch.end(); i++) {
+						 printf("Watch	[%s] %s\n",i->first.c_str(),i->second.c_str());
+					}
+					break;
+				case 'v':
+					switch (dcmd.size()) {
+						case 1:
+							pt = 0;
+							for (auto i = lines.begin(); i != lines.end(); i++) {
+								printf("%3d %s\n",++pt,i->c_str()); 
+							}
+							break;
+						case 2:
+							t = to_int(dcmd[1].c_str());
+							if (t < 1 || t > lines.size()) {
+								 printf("Error: line out of range\n");
+								break;
+							}
+							printf("%s\n",lines[t-1].c_str());
+							break;
+						case 3:
+							t1 = to_int(dcmd[1].c_str()), t2 = to_int(dcmd[2].c_str());
+							if (t1 < 1 || t1 > lines.size() || t2 < 1 || t2 > lines.size()) {
+								 printf("Error: line out of range\n");
+								break;
+							}
+							for (int i = t1 - 1; i < t2; i++) printf("%3d %s\n",i+1,lines[i].c_str());
+							break;
+					}
+					break;
+				case 'q':
+					return -2;
+					break;
+				default:
+					flag2 = true;
+					break;
+			}
+		}
+		
+	}
 		if (args.size() != 0 && args[0][0]!='#') {
 			string attl;
 			if (args.size() > 1) attl = lines[i].substr(args[0].length()+1); // getting other things EXCEPT command
@@ -1104,168 +1237,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 			ifdebug printf("Jumping to cause %d\n",i);
 		}
 		else i++; // continuing running next
-		fcont: if (debugger) {
-		int bp,pt,t,t1,t2;
-		pair<int,string> mp;
-		// is breakpoint?
-		// i already added
-		if (breakp.count(i-1)) {
-			breaknext = true;
-		}
-		// is conditional breakpoint?
-		for (auto it = breakc.begin(); it != breakc.end(); it++) {
-			if (it->first == (i-1) && getCond(it->second)) {
-				breaknext = true;
-				break;
-			} 
-		}
-		bool flag2 = breaknext;
-		while (flag2) {
-			FILE *pi;
-			pi = fopen(dbgpop.c_str(),"w");
-#			ifdef DEBUGS
-			printf("Preparing debug info:\n");
-#			endif
-			if (!pipe) {
-				printf("Execution at line %d\n%s\n",i,lines[i-1].c_str());
-			} else {
-				fprintf(pi,"%d\n",i-1); // vb reads file as line. also line id starts by 0
-			}
-			for (auto it = watch.begin(); it != watch.end(); it++) {
-				if (it->first == "int") {
-					if (pipe) {
-						fprintf(pi,"%s = %d\n",it->second.c_str(),getIntval(it->second));
-					} else printf("Watch: %s = %d\n",it->second.c_str(),getIntval(it->second));
-				} else if (it->first == "str") {
-					if (pipe) {
-						fprintf(pi,"%s = \"%s\"\n",it->second.c_str(),getStrval(it->second).c_str());
-					} else printf("Watch: %s = \"%s\"\n",it->second.c_str(),getStrval(it->second).c_str());
-				} else if (it->first == "real") {
-					if (pipe) {
-						fprintf(pi,"%s = %d\n",it->second.c_str(),getRealval(it->second));
-					} else printf("Watch: %s = %d\n",it->second.c_str(),getRealval(it->second));
-				}
-			}
-			flag2 = true;
-			// watchpoints
-			string dcm;
-			if (pipe) {
-				dcm = waitForFile(dbgpip).c_str();
-			} else {
-				printf(">>> ");
-				gets(debug_cmd);
-				dcm = debug_cmd;
-			}
-			vector<string> dcmd = split_argw(string(debug_cmd),true,' ');
-			switch (dcmd[0][0]) {
-				case 'n':
-					breaknext = true;
-					flag2 = false;
-					break;
-				case 'c':
-					breaknext = false;
-					flag2 = false;
-					break;
-				case 'j':
-					if (dcmd.size() != 2) {
-						if (!pipe) printf("Error: value not given\n");
-						break;
-					}
-					i = to_int(dcmd[1].c_str());
-					flag2 = false;
-					break;
-				case 's':
-					// s type x = v
-					if (dcmd.size() != 5 || dcmd[3] != "=") {
-						if (!pipe) printf("Error: value not given\n");
-						break;
-					}
-					if (dcmd[1] == "int" || dcmd[1]=="char") {
-						int_list.set(dcmd[2],getIntval(dcmd[4]));
-					} else if (dcmd[1] == "str") {
-						str_list.set(dcmd[2],getStrval(dcmd[4]));
-					} else {
-						if (!pipe) printf("Error: type not exist");
-					}
-				case 'r':
-					if (!pipe) printf("Error: program already running");
-					break;
-				case 'b':
-					if (dcmd.size() != 2) {
-						if (!pipe) printf("Error: value not given\n");
-						break;
-					}
-					bp = to_int(dcmd[1].c_str());
-					set_swtc(breakp,bp);
-					break;
-				case 'd':
-					if (dcmd.size() != 3) {
-						if (!pipe) printf("Error: value not given\n");
-						break;
-					}
-					bp = to_int(dcmd[1].c_str());
-					mp = make_pair(bp,dcmd[2]);
-					set_swtc(breakc,mp);
-					break;
-				case 'l':
-					for (auto i = breakp.begin(); i != breakp.end(); i++) {
-						printf("Normal	%d\n",(*i));
-					}
-					for (auto i = breakc.begin(); i != breakc.end(); i++) {
-						printf("Normal	%d	%s\n",i->first,i->second.c_str());
-					}
-					break;
-				case 'w':
-					// watch type value
-					if (dcmd.size() != 3) {
-						if (!pipe) printf("Error: value not given\n");
-						break;
-					}
-					set_swtc(watch,make_pair(dcmd[1],dcmd[2]));
-					break;
-				case 't':
-					for (auto i = watch.begin(); i != watch.end(); i++) {
-						if (!pipe) printf("Watch	[%s] %s\n",i->first.c_str(),i->second.c_str());
-					}
-					break;
-				case 'v':
-					switch (dcmd.size()) {
-						case 1:
-							pt = 0;
-							for (auto i = lines.begin(); i != lines.end(); i++) {
-								printf("%3d %s\n",++pt,i->c_str()); 
-							}
-							break;
-						case 2:
-							t = to_int(dcmd[1].c_str());
-							if (t < 1 || t > lines.size()) {
-								if (!pipe) printf("Error: line out of range\n");
-								break;
-							}
-							printf("%s\n",lines[t-1].c_str());
-							break;
-						case 3:
-							t1 = to_int(dcmd[1].c_str()), t2 = to_int(dcmd[2].c_str());
-							if (t1 < 1 || t1 > lines.size() || t2 < 1 || t2 > lines.size()) {
-								if (!pipe) printf("Error: line out of range\n");
-								break;
-							}
-							for (int i = t1 - 1; i < t2; i++) printf("%3d %s\n",i+1,lines[i].c_str());
-							break;
-					}
-					break;
-				case 'q':
-					return -2;
-					break;
-				default:
-					flag2 = true;
-					break;
-			}
-			fclose(pi);
-		}
-		
-	}
-		if (STEP_BY_STEP) system("pause");// force continuing running next 
+		fcont: if (STEP_BY_STEP) system("pause");// force continuing running next 
 	}
 	ret: ;
 	varfree();
@@ -1273,7 +1245,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 }
 
 inline int runCode(string code) {
-	return __runCode(code,false,false);
+	return __runCode(code,false);
 }
 
 #endif 
