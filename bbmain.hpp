@@ -18,8 +18,8 @@ using namespace std;
 
 // Preparing REAL NUMBER. 
 
-#define DEBUG_MODE false
-#define STEP_BY_STEP false
+#define DEBUG_MODE true
+#define STEP_BY_STEP true
 #define PRINT_ERROR_INFO true
 #define EXIT_IN_ERROR true
 
@@ -870,7 +870,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						if (args.size() == 3) {
 					// a op b (including =! =~)
 					if (args[1] == "=") {
-						int t = int_list.get(args[0]); int_list.set(args[0],getIntval(args[2]));
+						int_list.set(args[0],getIntval(args[2]));
 					} else if (args[1] == "+=") {
 						__op_singoc_int(+=);
 					} else if (args[1] == "-=") {
@@ -995,7 +995,7 @@ int __runCode(string code, bool debugger, bool pipe) {
 						dnid = getIntval(ps.second);
 						if (args.size() == 3) {
 							if (args[1] == "=") {
-								str_list.array_set(args[0],dnid,getStrval(args[2]));
+								str_list.array_set(ps.first,dnid,getStrval(args[2]));
 							} else if (args[1] == "+=") {
 								__op_singoa_str(+=);
 							} else __throw(3);
