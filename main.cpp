@@ -3,6 +3,17 @@
 #include <cstdlib>
 #include "bbmain.hpp"
 using namespace std;
+
+/*
+Run to mailslot:
+
+-D		Debugging in mailslot.
+		A mailslot named dbginslot receive command (requires open first).
+		A mailslot named dbgoutslot output.
+-R		Run in mailslot.
+		A mailslot named dbgoutslot output.
+*/ 
+
 void help() {
 	printf("Usage: blue (-h | -v | file)\n\n-h\n--help      Show this help message and quit.\n-v\n--version   Show version message and quit.\n-d\n--debug     Run program with debugger.\n\nRun blue with filename will run bluebetter program.\n");
 	exit(0);
@@ -14,7 +25,7 @@ void vers() {
 }
 
 int main(int argc, char* argv[]) {
-	bool debugs = false;
+	bool debugs = false, mails = false;
 	string s;
 	if (argc == 1) help();
 	s = argv[1];
@@ -40,5 +51,5 @@ int main(int argc, char* argv[]) {
 	}
 	buf=buf.substr(0,buf.length()-1); // removing something not good
 	fclose(f);
-	return __runCode(buf,debugs); //runCode(buf);
+	return __runCode(buf,debugs,mails); //runCode(buf);
 }
