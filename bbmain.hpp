@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <conio.h>
+#include <windows.h>
 using namespace std;
 
 #ifndef _BLUEBETTER_
@@ -241,7 +242,19 @@ inline string getTemp(void) {
 	return string(getenv("temp"));
 }
 
-int __runCode(string code, bool debugger) {
+#define ifmails if(mails)
+#define ifnmails if(!mails) 
+
+int __runCode(string code, bool debugger, bool mails) {
+	constexpr LPCTSTR dbginslot = TEXT("\\\\.\\mailslot\\bluebetter_debug_in");
+	constexpr LPCTSTR dbgoutslot = TEXT("\\\\.\\mailslot\\bluebetter_out");
+	
+	DWORD cbmsg,cmsg,cbr,cbw,callmsg;
+	HANDLE dbgins,dbgouts;
+	
+	char debug_cmd[2048], slot_recv[1024];
+	bool bres;
+	
 	map<string,_call> callist;
 	_varlist<int> int_list;
 	_varlist<string> str_list; 
@@ -254,28 +267,54 @@ int __runCode(string code, bool debugger) {
 	set<int> breakp;//Breakpoint (debugger)
 	set<pair<int,string> > breakc; // Conditional breakpoint (debugger) 
 	int i = 0,rets = 0; // executor pointing
-	char debug_cmd[2048];
 	bool flag = true, breaknext = false;
+	
+	if (mails) {
+		dbgins = CreateMailslot(dbginslot,0,MAILSLOT_WAIT_FOREVER,(LPSECURITY_ATTRIBUTES)NULL);
+		//dbgouts = CreateMailslot(dbgoutslot,0,MAILSLOT_WAIT_FOREVER,(LPSECURITY_ATTRIBUTES)NULL);// For server
+		// Create outputting mailslot before running! 
+		dbgouts = CreateFile(dbgoutslot,GENERIC_WRITE,FILE_SHARE_READ,(LPSECURITY_ATTRIBUTES)NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,(HANDLE)NULL);
+		if (dbgins == INVALID_HANDLE_VALUE || dbgouts == INVALID_HANDLE_VALUE) {
+			printf("Error: cannot make connection with client.\n");
+			return -1;
+		}
+	}
+	
 	if (debugger) {
-		printf("Welcome to BlueBetter Debugger\n\n");
+		if (!mails) printf("Welcome to BlueBetter Debugger\n\n");
 		int bp,pt,t,t1,t2;
 		pair<int,string> mp;
 		do {
 			string dcm;
+			if (mails) {
+				while (true) {
+					bres = GetMailslotInfo(dbgins,(LPDWORD)NULL,&cbmsg,&cmsg,(LPDWORD)NULL);
+					if (!bres) {
+						printf("Error: connection lost with client. (Error %d)\n",GetLastError());
+					}
+					if (cbmsg != MAILSLOT_NO_MESSAGE) break; 
+				}
+				// received
+				if (!ReadFile(dbgins,slot_recv,cbmsg,&cbr,NULL)) {
+					printf("Error: connection lost with client. (Error %d)\n",GetLastError());
+				}
+				dcm = string(slot_recv);
+			} else {
 				printf(">>> ");
 				gets(debug_cmd);
 				dcm = debug_cmd;
+			}
 			vector<string> dcmd = split_argw(dcm,true,' ');
 			switch (dcmd[0][0]) {
 				case 'n': case 'c': case 'j': case 's':
-					printf("Error: program not running\n");
+					ifnmails printf("Error: program not running\n");
 					break;
 				case 'r':
 					flag = false;
 					break;
 				case 'b':
 					if (dcmd.size() != 2) {
-						printf("Error: value not given\n");
+						ifnmails printf("Error: value not given\n");
 						break;
 					}
 					bp = to_int(dcmd[1].c_str());
@@ -283,7 +322,7 @@ int __runCode(string code, bool debugger) {
 					break;
 				case 'd':
 					if (dcmd.size() != 3) {
-						 printf("Error: value not given\n");
+						ifnmails printf("Error: value not given\n");
 						break;
 					}
 					bp = to_int(dcmd[1].c_str());
@@ -291,6 +330,7 @@ int __runCode(string code, bool debugger) {
 					set_swtc(breakc,mp);
 					break;
 				case 'l':
+					ifmails break;
 					for (auto i = breakp.begin(); i != breakp.end(); i++) {
 						printf("Normal			%d\n",(*i));
 					}
@@ -301,17 +341,19 @@ int __runCode(string code, bool debugger) {
 				case 'w':
 					// watch type value
 					if (dcmd.size() != 3) {
-						 printf("Error: value not given\n");
+						ifnmails printf("Error: value not given\n");
 						break;
 					}
 					set_swtc(watch,make_pair(dcmd[1],dcmd[2]));
 					break;
 				case 't':
+					ifmails break;
 					for (auto i = watch.begin(); i != watch.end(); i++) {
 						printf("Watch	[%s] %s\n",i->first.c_str(),i->second.c_str());
 					}
 					break;
 				case 'v':
+					ifmails break;
 					switch (dcmd.size()) {
 						case 1:
 							pt = 0;
@@ -343,6 +385,7 @@ int __runCode(string code, bool debugger) {
 			}
 		} while (flag);
 	}
+	// If start running, client program must looking for new mailslot message.
 	while (i < lines.size()) {
 		debugs("Executing: %s\n",lines[i].c_str());
 		vector<string> args = split_arg(lines[i],true,' ');
@@ -362,22 +405,46 @@ int __runCode(string code, bool debugger) {
 		pair<int,string> mp;
 		bool flag2 = breaknext;
 		while (flag2) {
-				printf("Executed at line %d\n%s\n",i+1,lines[i].c_str());
+			char tmsg[2048];
+			if (!mails) sprintf(tmsg,"Executed at line %d\n%s\n",i+1,lines[i].c_str());
+			else sprintf(tmsg,"%d\n",i);
 			for (auto it = watch.begin(); it != watch.end(); it++) {
 				if (it->first == "int") {
-					printf("Watch: %s = %d\n",it->second.c_str(),getIntval(it->second));
+					sprintf(tmsg,"%sWatch: %s = %d\n",tmsg,it->second.c_str(),getIntval(it->second));
 				} else if (it->first == "str") {
-					printf("Watch: %s = \"%s\"\n",it->second.c_str(),getStrval(it->second).c_str());
+					sprintf(tmsg,"%sWatch: %s = \"%s\"\n",tmsg,it->second.c_str(),getStrval(it->second).c_str());
 				} else if (it->first == "real") {
-				    printf("Watch: %s = %d\n",it->second.c_str(),getRealval(it->second));
+				    sprintf(tmsg,"%sWatch: %s = %d\n",tmsg,it->second.c_str(),getRealval(it->second));
 				}
 			}
+				if (!mails) {
+					
+				} else {
+					if (!WriteFile(dbgouts, tmsg,(DWORD)(sizeof(char)*strlen(tmsg)+1),&cbw,(LPOVERLAPPED)NULL)) {
+						printf("Error: connection lost with client. (Error %d)\n",GetLastError());
+					}
+				}
 			flag2 = true;
 			// watchpoints
 			string dcm;
+			if (mails) {
+				while (true) {
+					bres = GetMailslotInfo(dbgins,(LPDWORD)NULL,&cbmsg,&cmsg,(LPDWORD)NULL);
+					if (!bres) {
+						printf("Error: connection lost with client. (Error %d)\n",GetLastError());
+					}
+					if (cbmsg != MAILSLOT_NO_MESSAGE) break; 
+				}
+				// received
+				if (!ReadFile(dbgins,slot_recv,cbmsg,&cbr,NULL)) {
+					printf("Error: connection lost with client. (Error %d)\n",GetLastError());
+				}
+				dcm = string(slot_recv);
+			} else {
 				printf(">>> ");
 				gets(debug_cmd);
 				dcm = debug_cmd;
+			}
 			vector<string> dcmd = split_argw(string(debug_cmd),true,' ');
 			switch (dcmd[0][0]) {
 				case 'n':
@@ -1245,7 +1312,7 @@ int __runCode(string code, bool debugger) {
 }
 
 inline int runCode(string code) {
-	return __runCode(code,false);
+	return __runCode(code,false,false);
 }
 
 #endif 
