@@ -1,8 +1,8 @@
 [Editor_0]
 <<<<<<< HEAD
-CursorCol=3
-CursorRow=1241
-TopLine=1063
+CursorCol=22
+CursorRow=1297
+TopLine=1283
 =======
 CursorCol=40
 CursorRow=202
@@ -11,16 +11,16 @@ TopLine=185
 LeftChar=1
 [Editors]
 Order=1,0,2,3
-Focused=0
+Focused=1
 [Editor_1]
-CursorCol=18
-CursorRow=37
-TopLine=9
+CursorCol=49
+CursorRow=34
+TopLine=20
 LeftChar=1
 [Editor_2]
 CursorCol=10
 CursorRow=36
-TopLine=22
+TopLine=34
 LeftChar=1
 [Editor_3]
 CursorCol=13

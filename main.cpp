@@ -31,12 +31,21 @@ int main(int argc, char* argv[]) {
 	s = argv[1];
 	if (s == "-h" || s == "--help") help();
 	if (s == "-v" || s == "--version") vers();
-	if (s == "-d" || s == "--debug") {
+	if (s == "-d" || s == "--debug" || s == "-D") {
 		if (argc < 3) {
 			printf("Error: cannot read file\n");
 			return 1;
 		}
 		debugs = true;
+		if (s == "-D") mails = true; 
+		s = argv[2];
+	}
+	if (s == "-R") {
+		if (argc < 3) {
+			printf("Error: cannot read file\n");
+			return 1;
+		}
+		mails = true;
 		s = argv[2];
 	}
 	FILE *f;
